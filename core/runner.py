@@ -18,8 +18,9 @@ def load_points(path):
 def configure_motion_speed(robot, case):
     """Apply the per-case speed setting before a motion command."""
     if case.get("mode") in ("movel", "movej"):
-        speed = case.get("speed", 100)
-        response = robot.robot_control.SpeedFactor(speed)
+        # Case speed is already supplied as MovL/MovJ v=... below.
+        # Do not apply it a second time as a global scale.
+        response = robot.robot_control.SpeedFactor(100)
         check_response(response)
         return response
     return None
@@ -38,6 +39,8 @@ def execute_motion(robot, cfg, case, manager, run_dir):
         manager.robot.set_commanded_point(target)
         speed = case.get("speed", 100)
         accel = case.get("acceleration", 100)
+        manager.event("MOTION_PARAMETERS", f"mode={mode}; v={speed}; a={accel}; global_speed=100")
+        print(f"[{mode.upper()}] v={speed}% a={accel}% global=100%", flush=True)
         if mode == "movel":
             response = robot.motion.MovL(
                 target, CoordinateType.CARTESIAN, a=accel, v=speed
@@ -48,7 +51,7 @@ def execute_motion(robot, cfg, case, manager, run_dir):
             )
         check_response(response)
         wait_for_motion(robot, cfg.motion_timeout_s)
-        return {"command_count": 1, "response": str(response)}
+        return {"command_count": 1, "response": str(response), "speed_percent": speed, "acceleration_percent": accel, "elapsed_s": time.perf_counter()-started}
 
     if mode == "csv":
         points = load_points(case["csv_path"])
@@ -215,7 +218,7 @@ def run_trial(cfg, case, run_dir, robot=None):
         if speed_response is not None:
             print(
                 f"[ROBOT] Global speed factor set to "
-                f"{case['speed']}%", flush=True
+                "100% (case speed applied to motion command)", flush=True
             )
         print("[LOGGING] Starting robot, Rigol and camera loggers", flush=True)
         manager.start()
@@ -242,10 +245,19 @@ def run_trial(cfg, case, run_dir, robot=None):
     finally:
         print("[LOGGING] Stopping acquisition and saving data", flush=True)
         result["logging"] = manager.stop()
+        if "rigol_error" in result["logging"] or "robot_error" in result["logging"]:
+            result["status"] = "failed"
+            success = False
+        for key in ("rigol", "camera"):
+            report = result["logging"].get(key, {})
+            if isinstance(report, dict) and report.get("error"):
+                result["status"] = "failed"
+                success = False
 
         # Never attempt automatic recovery motion after a failed trial.
         if connected and success:
             try:
+                check_response(robot.robot_control.SpeedFactor(cfg.slow_speed))
                 slow_move(robot, cfg.home, CoordinateType.JOINT, cfg)
                 result["error_ids"] = str(
                     robot.robot_control.GetErrorID()
