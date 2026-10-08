@@ -1,0 +1,39 @@
+{
+  "status": "completed",
+  "case": {
+    "name": "movel",
+    "mode": "movel",
+    "start": [
+      -600,
+      -400,
+      250,
+      -90,
+      0,
+      90
+    ],
+    "target": [
+      -600,
+      400,
+      250,
+      -90,
+      0,
+      90
+    ],
+    "speed": 50,
+    "acceleration": 50
+  },
+  "motion": {
+    "command_count": 1,
+    "response": "0,{83},MovL(pose={-600.000000,400.000000,250.000000,-90.000000,0.000000,90.000000},a=50,v=50);"
+  },
+  "logging": {
+    "robot": {
+      "received_packets": 484,
+      "invalid_packets": 0,
+      "dropped_rows": 0,
+      "error_samples": 0,
+      "collision_samples": 0
+    }
+  },
+  "error_ids": "0,{[]},GetErrorID();"
+}

@@ -1,0 +1,35 @@
+{
+  "status": "failed",
+  "case": {
+    "name": "movel",
+    "mode": "movel",
+    "start": [
+      -600,
+      -400,
+      250,
+      -90,
+      0,
+      90
+    ],
+    "target": [
+      -600,
+      400,
+      250,
+      -90,
+      0,
+      90
+    ],
+    "speed": 50,
+    "acceleration": 50
+  },
+  "error": "RuntimeError('Unable to open RTSP stream: rtsp://192.168.50.146:8554')",
+  "logging": {
+    "robot": {
+      "received_packets": 3684,
+      "invalid_packets": 0,
+      "dropped_rows": 0,
+      "error_samples": 0,
+      "collision_samples": 0
+    }
+  }
+}

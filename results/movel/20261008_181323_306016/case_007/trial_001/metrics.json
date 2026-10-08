@@ -1,0 +1,14 @@
+{
+  "robot_samples": 1365,
+  "rigol_samples": 2000,
+  "joint_tracking_rmse": 1.081038979418605,
+  "joint_tracking_rmse_max": 3.542606251170815,
+  "tcp_position_tracking_rmse_mm": 5.794909911744479,
+  "tcp_position_tracking_rmse_mm_max": 15.33407209691136,
+  "joint_velocity_max": 110.29822663287824,
+  "tcp_speed_max": 481.8740710391807,
+  "motion_duration_s": 2.281592899998941,
+  "mean_power_W": 151.5053670008447,
+  "peak_power_W": 197.75913927519076,
+  "rigol_acquisition_energy_J": 503.4986642107345
+}

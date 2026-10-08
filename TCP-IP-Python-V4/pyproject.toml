@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dobot_sdk"
+version = "2.0.0"
+description = "DOBOT TCP/IP Python SDK V4 - 机器人控制SDK"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "DOBOT", email = "support@dobot.cn"}
+]
+keywords = ["dobot", "robot", "robotics", "tcp-ip", "sdk"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "numpy>=1.19.0",
+    "requests>=2.25.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "pytest-cov>=2.0",
+]
+gui = [
+    "numpy>=1.19.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/dobot-cn/TCP-IP-Python-V4-main/tree/feature/v4-optimization"
+Documentation = "https://github.com/dobot-cn/TCP-IP-Python-V4-main/tree/feature/v4-optimization#readme"
+Repository = "https://github.com/dobot-cn/TCP-IP-Python-V4-main/tree/feature/v4-optimization"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["dobot_sdk*"]
+exclude = ["tests*", "examples*", "demo*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["dobot_sdk"]
+omit = ["tests/*", "examples/*", "demo/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]

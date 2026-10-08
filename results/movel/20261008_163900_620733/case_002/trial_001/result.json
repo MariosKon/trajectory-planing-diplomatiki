@@ -1,0 +1,49 @@
+{
+  "status": "completed",
+  "case": {
+    "name": "movel",
+    "mode": "movel",
+    "start": [
+      -600,
+      -400,
+      250,
+      -90,
+      0,
+      90
+    ],
+    "target": [
+      -600,
+      400,
+      250,
+      -90,
+      0,
+      90
+    ],
+    "speed": 50,
+    "acceleration": 75
+  },
+  "motion": {
+    "command_count": 1,
+    "response": "0,{48},MovL(pose={-600.000000,400.000000,250.000000,-90.000000,0.000000,90.000000},a=75,v=50);"
+  },
+  "logging": {
+    "rigol": {
+      "resource": "USB0::0x1AB1::0x0517::DS1ZE264511439::INSTR",
+      "samples": 3481132,
+      "error": null
+    },
+    "camera": {
+      "path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\movel\\20261008_163900_620733\\case_002\\trial_001\\camera.mp4",
+      "frame_count": 629,
+      "error": null
+    },
+    "robot": {
+      "received_packets": 3055,
+      "invalid_packets": 0,
+      "dropped_rows": 0,
+      "error_samples": 0,
+      "collision_samples": 0
+    }
+  },
+  "error_ids": "0,{[]},GetErrorID();"
+}

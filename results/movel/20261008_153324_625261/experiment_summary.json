@@ -1,0 +1,84 @@
+{
+  "trials": 2,
+  "completed": 1,
+  "failed": 1,
+  "metrics": {
+    "case": {
+      "mean": 1.0,
+      "std": 0.0,
+      "min": 1.0,
+      "max": 1.0,
+      "count": 1
+    },
+    "joint_tracking_rmse": {
+      "mean": 1.3058611423996092,
+      "std": 0.0,
+      "min": 1.3058611423996092,
+      "max": 1.3058611423996092,
+      "count": 1
+    },
+    "joint_tracking_rmse_max": {
+      "mean": 1.9507330922664188,
+      "std": 0.0,
+      "min": 1.9507330922664188,
+      "max": 1.9507330922664188,
+      "count": 1
+    },
+    "joint_velocity_max": {
+      "mean": 60.78451823494205,
+      "std": 0.0,
+      "min": 60.78451823494205,
+      "max": 60.78451823494205,
+      "count": 1
+    },
+    "motion_duration_s": {
+      "mean": 3.918507200000022,
+      "std": 0.0,
+      "min": 3.918507200000022,
+      "max": 3.918507200000022,
+      "count": 1
+    },
+    "rigol_samples": {
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "count": 1
+    },
+    "robot_samples": {
+      "mean": 484.0,
+      "std": 0.0,
+      "min": 484.0,
+      "max": 484.0,
+      "count": 1
+    },
+    "tcp_position_tracking_rmse_mm": {
+      "mean": 6.923888405199076,
+      "std": 0.0,
+      "min": 6.923888405199076,
+      "max": 6.923888405199076,
+      "count": 1
+    },
+    "tcp_position_tracking_rmse_mm_max": {
+      "mean": 7.652351851009333,
+      "std": 0.0,
+      "min": 7.652351851009333,
+      "max": 7.652351851009333,
+      "count": 1
+    },
+    "tcp_speed_max": {
+      "mean": 245.11625704702854,
+      "std": 0.0,
+      "min": 245.11625704702854,
+      "max": 245.11625704702854,
+      "count": 1
+    },
+    "trial": {
+      "mean": 1.0,
+      "std": 0.0,
+      "min": 1.0,
+      "max": 1.0,
+      "count": 1
+    }
+  }
+}

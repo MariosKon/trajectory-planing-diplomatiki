@@ -1,0 +1,2 @@
+case,error,global_trial,joint_tracking_rmse,joint_tracking_rmse_max,joint_velocity_max,mean_power_W,motion_duration_s,peak_power_W,rigol_acquisition_energy_J,rigol_samples,robot_samples,status,tcp_position_tracking_rmse_mm,tcp_position_tracking_rmse_mm_max,tcp_speed_max,trial
+1,RuntimeError('Unable to open RTSP stream: rtsp://192.168.50.146:8554'),1,0.0009268378146181215,0.0055116557437918596,0.14970549822370474,,,,,0,3681,failed,0.004143527477885136,0.01430128732977317,1.2063928858959732,1

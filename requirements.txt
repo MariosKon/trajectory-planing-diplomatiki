@@ -1,0 +1,4 @@
+numpy
+pyvisa
+opencv-python-headless
+ruckig
