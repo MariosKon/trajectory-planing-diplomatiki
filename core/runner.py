@@ -362,9 +362,13 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
 
     try:
         for case_index, case in enumerate(cases, start=1):
+            matrix_index = int(case.get("matrix_case_index", case_index))
+            matrix_count = int(case.get("matrix_case_count", total_cases))
             log("")
             log("-" * 66)
-            log(f"TEST CASE {case_index}/{total_cases}")
+            log(f"TEST CASE {matrix_index}/{matrix_count}" +
+                (f" (selected {case_index}/{total_cases})"
+                 if matrix_count != total_cases else ""))
             log(case_description(case))
             log("-" * 66)
 
@@ -378,7 +382,7 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
 
                 folder = (
                     root
-                    / f"case_{case_index:03d}"
+                    / f"case_{matrix_index:03d}"
                     / f"trial_{trial_index:03d}"
                 )
                 folder.mkdir(parents=True, exist_ok=False)
@@ -390,14 +394,16 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
 
                 log("")
                 log(f">>> TRIAL {global_index}/{total_trials}")
-                log(f"    Case: {case_index}/{total_cases}")
+                log(f"    Matrix case: {matrix_index}/{matrix_count}")
                 log(f"    Repetition: {trial_index}/{repetitions}")
                 log(f"    Trials remaining (including this): {remaining_before}")
 
                 trial_start = time.perf_counter()
 
                 record = {
-                    "case": case_index,
+                    "case": matrix_index,
+                    "matrix_case_count": matrix_count,
+                    "selected_case": case_index,
                     "trial": trial_index,
                     "global_trial": global_index,
                     "status": "planned",
