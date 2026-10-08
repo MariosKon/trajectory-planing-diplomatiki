@@ -186,3 +186,25 @@ frame rate and repeats the last received frame as necessary to preserve
 elapsed playback duration; repeated frames are not new camera observations.
 Camera metadata includes actual decoded frame count and wall-clock
 recording duration. Verify video duration locally before long experiments.
+
+## Robot feedback logging window
+
+Robot feedback is now intentionally started **after** camera and Rigol setup.
+With the default values it begins about 0.5 seconds before the measured
+motion and continues for 1.0 second after MOTION_END. This removes
+instrument-startup dead time from the feedback recording while preserving
+pre- and post-motion feedback. Configurable fields in common.json:
+
+```json
+{
+  "rigol_pre_delay_s": 1.5,
+  "robot_logger_pre_delay_s": 0.5,
+  "robot_logger_post_delay_s": 1.0
+}
+```
+
+The exact lead is software-clock based and subject to the time required for
+the first feedback packet. The camera still stops after the Rigol transfer
+plus its configured additional delay. Tracking metrics continue to use
+only MOTION_START to MOTION_END. On failure, logger cleanup still runs and
+attempts to preserve the available recordings.
