@@ -41,7 +41,9 @@ class ConfigureMotionSpeedTests(unittest.TestCase):
         self.assertEqual(cfg.settle_s, 3.0)
         self.assertEqual(cfg.camera_pre_delay_s, 2.0)
         self.assertEqual(cfg.camera_stop_delay_s, 2.0)
-        self.assertEqual(cfg.rigol_pre_delay_s, 2.0)
+        self.assertEqual(cfg.rigol_pre_delay_s, 1.5)
+        self.assertEqual(cfg.robot_logger_pre_delay_s, 0.5)
+        self.assertEqual(cfg.robot_logger_post_delay_s, 1.0)
         self.assertEqual(cfg.rigol_stop_delay_s, 1.0)
 
     def test_slow_move_does_not_add_a_fixed_settle_delay(self):
