@@ -27,17 +27,12 @@ normalized cubic as ServoP:
 with `u=t/T` and zero velocities at both ends.
 
 - Sample interval: **30 ms**.
-- Reference jointwise velocity bound: **40 deg/s**.
-- Reference jointwise acceleration bound: **60 deg/s²**.
-- Max displacement: **76°** for J1 and J5.
-- Duration: `max(1.5*76/40, sqrt(6*76/60))` rounded to the
-  30 ms grid: **2.85 s**, **95 intervals**, **96 rows**.
-- Maximum cubic speed: **40 deg/s**; peak acceleration ≈ **56.14 deg/s²**.
+- Requested duration: **T = 2.00 s**, independent of velocity/acceleration limits.
+- Aligned to 30 ms intervals: **2.01 s**, **67 intervals**, **68 rows**.
+- Resulting theoretical peak speed: **56.72 deg/s**; acceleration: **112.87 deg/s²** (not imposed limits).
 - CSV columns: `mode,j1,j2,j3,j4,j5,j6`, with `mode=ServoJ`.
 
-The motion limits above are **initial planner choices, not verified
-mechanical/controller limits**. Modify both the MATLAB settings and the
-matching Python preflight limits if a different profile is needed.
+Change `T` in MATLAB and `REQUESTED_DURATION_S` in `experiment.py` together if using a different duration. Verify robot joint speed and acceleration feasibility before hardware runs.
 Reference jerk is constant only within the segment; switching from
 standstill at the start/end introduces acceleration discontinuities.
 
@@ -70,7 +65,7 @@ python main.py --experiment servoj_behavior --case 1 --repetitions 1 --execute
 ```
 
 No `--execute` means **dry-run**. The loader checks joint headers,
-ServoJ mode, endpoints, exact cubic shape, minimum sample count and
+ServoJ mode, endpoints, exact cubic shape, expected sample count and
 30 ms period before any robot connection.
 
 ## Scientific comparison and safety
