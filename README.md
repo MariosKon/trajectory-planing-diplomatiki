@@ -159,3 +159,30 @@ the robot motion interval. The latest measured NORM waveform gave about
 66.92 J over a six-second acquisition with 73.63 W peak power, but the
 current excursion starts at the left screen boundary. Those results remain
 diagnostic pending controlled acquisition placement and calibration.
+
+## Reduced-bandwidth Rigol and delayed camera shutdown
+
+Routine experiments use **NORM display waveforms only**, by default.
+Set `rigol_download_raw: false` in `config/common.json`: this skips the
+millions-of-samples RAW USB transfers entirely, not just saving the CSVs.
+The standard 0.5 s/div window has 1200 displayed points across six seconds
+(200 Hz). Each trial saves `rigol_scope.csv`,
+`rigol_chan1_display.csv`, `rigol_chan2_display.csv`, the instrument
+screen PNG, and diagnostic metadata. Scope sampling is separate from the
+30 ms ServoP command period.
+
+For instrument debugging only, set `rigol_download_raw: true` to enable
+full-resolution RAW downloads and waveform consistency comparisons.
+This is expensive and should remain disabled for batch experiments. The
+display mode has lower effective bandwidth and is unsuitable for
+high-frequency current ripple or brief transients.
+
+The logger stops robot feedback after MOTION_END, then downloads Rigol
+waveforms **while video is still recording**; only then does it wait
+`camera_stop_delay_s` (default in common.json: 2 seconds) and stop
+the RTSP recorder. This includes video of the fluid continuing to settle
+after movement and scope transfer. The MP4 writer uses a constant output
+frame rate and repeats the last received frame as necessary to preserve
+elapsed playback duration; repeated frames are not new camera observations.
+Camera metadata includes actual decoded frame count and wall-clock
+recording duration. Verify video duration locally before long experiments.
