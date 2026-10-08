@@ -223,6 +223,18 @@ def run_trial(cfg, case, run_dir, robot=None):
         print("[LOGGING] Starting robot, Rigol and camera loggers", flush=True)
         manager.start()
         print("[LOGGING] Acquisition started", flush=True)
+        if manager.rigol_started:
+            rigol_start = manager.rigol.metadata.get("host_start_perf_s")
+            if isinstance(rigol_start, (int, float)):
+                rigol_lead_s = time.perf_counter() - rigol_start
+                manager.event(
+                    "RIGOL_TO_MOTION_LEAD",
+                    f"seconds={rigol_lead_s:.6f}",
+                )
+                print(
+                    f"[RIGOL] :RUN-to-motion command lead: {rigol_lead_s:.3f}s",
+                    flush=True,
+                )
         manager.event("MOTION_START", str(case))
         print("[MOTION] Executing trajectory", flush=True)
         result["motion"] = execute_motion(
