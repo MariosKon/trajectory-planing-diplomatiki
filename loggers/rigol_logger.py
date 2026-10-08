@@ -125,6 +125,64 @@ class RigolScopeLogger:
             self.close()
             raise
 
+    def _capture_screen_image(self):
+        """Save what the oscilloscope shows while stopped."""
+        if self.scope is None:
+            return
+        old_timeout = self.scope.timeout
+        try:
+            self.scope.timeout = max(old_timeout, 10000)
+            image = self.scope.query_binary_values(
+                ":DISP:DATA? ON,OFF,PNG", datatype="B", container=bytes
+            )
+            if not bytes(image).startswith(b"\x89PNG\r\n\x1a\n"):
+                raise ValueError("Invalid PNG response from Rigol")
+            (self.run_dir / "rigol_screen.png").write_bytes(bytes(image))
+            self.metadata["screen_image"] = "rigol_screen.png"
+        except Exception as exc:
+            self.metadata["warnings"].append(f"Screen capture failed: {exc!r}")
+        finally:
+            self.scope.timeout = old_timeout
+
+    def _download_display_waveform(self, channel: str):
+        """Capture the 1200-point NORM display trace separately from RAW."""
+        if self.scope is None:
+            return
+        try:
+            self.scope.write(f":WAV:SOUR {channel}")
+            self.scope.write(":WAV:MODE NORM")
+            self.scope.write(":WAV:FORM BYTE")
+            preamble = self.scope.query(":WAV:PRE?").strip().split(",")
+            if len(preamble) < 10:
+                raise ValueError(f"Malformed display preamble: {preamble}")
+            count = min(int(float(preamble[2])), 1200)
+            if count < 2:
+                raise ValueError("Display preamble has fewer than two points")
+            self.scope.write(":WAV:STAR 1")
+            self.scope.write(f":WAV:STOP {count}")
+            samples = np.asarray(self.scope.query_binary_values(
+                ":WAV:DATA?", datatype="B", container=np.array
+            ), dtype=float)
+            if samples.size != count:
+                raise ValueError(
+                    f"NORM expected {count} points but received {samples.size}"
+                )
+            xinc, xorig, xref = map(float, preamble[4:7])
+            yinc, yorig, yref = map(float, preamble[7:10])
+            time_axis = (np.arange(count, dtype=float) - xref) * xinc + xorig
+            displayed = (samples - yorig - yref) * yinc
+            self.metadata["channels"][channel]["display_preamble"] = preamble
+            with (self.run_dir / f"rigol_{channel.lower()}_display.csv").open(
+                "w", newline="", encoding="utf-8"
+            ) as handle:
+                writer = csv.writer(handle)
+                writer.writerow(["scope_time_s", "displayed_value"])
+                writer.writerows(zip(time_axis, displayed))
+        except Exception as exc:
+            self.metadata["warnings"].append(
+                f"NORM display trace failed for {channel}: {exc!r}"
+            )
+
     def _download_waveform(self, channel: str):
         if self.scope is None:
             raise RuntimeError("Rigol not connected")
@@ -208,6 +266,13 @@ class RigolScopeLogger:
             self.scope.write(":STOP")
             self.scope.query("*OPC?")
             self.metadata["host_stop_perf_s"] = time.perf_counter()
+            self.metadata["host_acquisition_duration_s"] = (
+                self.metadata["host_stop_perf_s"] - self.metadata["host_start_perf_s"]
+            )
+            self.metadata["sample_rate_after_stop"] = self._query_optional(":ACQ:SRAT?")
+            self._capture_screen_image()
+            for channel in (self.current_channel, self.voltage_channel):
+                self._download_display_waveform(channel)
             current_t, current_raw = self._download_waveform(self.current_channel)
             voltage_t, voltage_raw = self._download_waveform(self.voltage_channel)
             self._save_channel(self.current_channel, current_t, current_raw)
@@ -238,6 +303,28 @@ class RigolScopeLogger:
             power = current * voltage
             self.metadata["power_calibrated"] = current_factor is not None
             self.metadata["waveform_overlap_duration_s"] = float(t[-1] - t[0])
+            acquired_s = self.metadata["host_acquisition_duration_s"]
+            waveform_s = self.metadata["waveform_overlap_duration_s"]
+            coverage = waveform_s / acquired_s if acquired_s > 0 else 0.0
+            self.metadata["waveform_host_duration_ratio"] = coverage
+            # Trigger-relative time does not equal host time. Only duration
+            # coverage is checked here, NOT motion synchronization.
+            self.metadata["acquisition_duration_covered"] = coverage >= 0.9
+            if not self.metadata["acquisition_duration_covered"]:
+                self.metadata["warnings"].append(
+                    f"RAW waveform covers {waveform_s:.3f}s of {acquired_s:.3f}s "
+                    f"host acquisition ({coverage:.1%}). Power data invalid."
+                )
+                power = np.full_like(power, np.nan)
+            if not (float(t[0]) <= 0.0 <= float(t[-1])):
+                self.metadata["warnings"].append(
+                    "RAW waveform excludes oscilloscope trigger-relative time zero. "
+                    "Compare rigol_screen.png with the displayed waveform CSV."
+                )
+            self.metadata["power_data_valid"] = bool(
+                self.metadata["power_calibrated"]
+                and self.metadata["acquisition_duration_covered"]
+            )
             self.sample = int(t.size)
             if self.sample < 2:
                 raise ValueError("Insufficient samples in common waveform window")
@@ -253,9 +340,18 @@ class RigolScopeLogger:
                 )
             self.metadata["preview_points"] = len(t)
             self._save_metadata()
-            return {"resource": self.resource_name, "samples": self.sample,
-                    "error": None, "warnings": self.metadata["warnings"],
-                    "power_calibrated": self.metadata["power_calibrated"]}
+            return {
+                "resource": self.resource_name,
+                "samples": self.sample,
+                "error": (
+                    "Rigol waveform duration shorter than acquisition duration"
+                    if not self.metadata["acquisition_duration_covered"]
+                    else None
+                ),
+                "warnings": self.metadata["warnings"],
+                "power_calibrated": self.metadata["power_calibrated"],
+                "power_data_valid": self.metadata["power_data_valid"],
+            }
         except Exception as exc:
             self.error = repr(exc)
             self.metadata["error"] = self.error
