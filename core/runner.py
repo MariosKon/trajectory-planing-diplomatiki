@@ -16,7 +16,11 @@ def load_points(path):
 
 
 def configure_motion_speed(robot, case):
-    """Apply the per-case speed setting before a motion command."""
+    """Apply explicit case-wide speed factor, or MoveL/MoveJ convention."""
+    if "global_speed_factor" in case:
+        response = robot.robot_control.SpeedFactor(case["global_speed_factor"])
+        check_response(response)
+        return response
     if case.get("mode") in ("movel", "movej"):
         # Case speed is already supplied as MovL/MovJ v=... below.
         # Do not apply it a second time as a global scale.
@@ -73,8 +77,23 @@ def execute_motion(robot, cfg, case, manager, run_dir):
     else:
         raise ValueError(f"Unknown motion mode: {mode}")
 
+    if mode == "csv":
+        aheadtime = float(case.get("aheadtime", cfg.aheadtime))
+        gain = float(case.get("gain", cfg.gain))
+        if not 20.0 <= aheadtime <= 100.0:
+            raise ValueError("Servo aheadtime must be in [20, 100]")
+        if not 200.0 <= gain <= 1000.0:
+            raise ValueError("Servo gain must be in [200, 1000]")
+        manager.event(
+            "MOTION_PARAMETERS",
+            f"servo_t_s={period};aheadtime={aheadtime};gain={gain}",
+        )
+    else:
+        aheadtime = cfg.aheadtime
+        gain = cfg.gain
+
     fields = [
-        "sample", "host_time_s", "mode", "lateness_ms",
+        "sample", "host_time_s", "mode", "servo_t_s", "aheadtime", "gain", "lateness_ms",
         "command_duration_ms", "planner_time_s",
         "planner_calculation_us", "finished",
     ] + [f"position_{i}" for i in range(1,7)]
@@ -116,11 +135,11 @@ def execute_motion(robot, cfg, case, manager, run_dir):
 
             if command_mode == "ServoJ":
                 response = robot.motion.ServoJ(
-                    values, period, cfg.aheadtime, cfg.gain
+                    values, period, aheadtime, gain
                 )
             elif command_mode == "ServoP":
                 response = robot.motion.ServoP(
-                    values, period, cfg.aheadtime, cfg.gain
+                    values, period, aheadtime, gain
                 )
             else:
                 raise ValueError(f"Unsupported mode: {command_mode}")
@@ -133,6 +152,9 @@ def execute_motion(robot, cfg, case, manager, run_dir):
                 "sample": count+1,
                 "host_time_s": time.perf_counter()-manager.robot.t0,
                 "mode": command_mode,
+                "servo_t_s": period,
+                "aheadtime": aheadtime,
+                "gain": gain,
                 "lateness_ms": max(0.0, -remaining)*1000,
                 "command_duration_ms": duration*1000,
                 "planner_time_s": planner_time,
@@ -218,7 +240,7 @@ def run_trial(cfg, case, run_dir, robot=None):
         if speed_response is not None:
             print(
                 f"[ROBOT] Global speed factor set to "
-                "100% (case speed applied to motion command)", flush=True
+                "100% (explicit case settings)", flush=True
             )
         print("[LOGGING] Starting robot, Rigol and camera loggers", flush=True)
         manager.start()
@@ -257,14 +279,35 @@ def run_trial(cfg, case, run_dir, robot=None):
     finally:
         print("[LOGGING] Stopping acquisition and saving data", flush=True)
         result["logging"] = manager.stop()
-        if "rigol_error" in result["logging"] or "robot_error" in result["logging"]:
-            result["status"] = "failed"
-            success = False
+        # Recorder failures mean lost measurements, not failed robot motion.
+        # Keep the trial and proceed to the next case after safe homing.
+        data_errors = {}
+        for key in ("rigol_error", "camera_error"):
+            if result["logging"].get(key):
+                data_errors[key] = result["logging"][key]
         for key in ("rigol", "camera"):
             report = result["logging"].get(key, {})
             if isinstance(report, dict) and report.get("error"):
-                result["status"] = "failed"
-                success = False
+                data_errors[key] = report["error"]
+        if data_errors and success:
+            result["status"] = "partial"
+            result["data_errors"] = data_errors
+            print(f"[DATA WARNING] Partial recording: {data_errors}", flush=True)
+
+        # A robot-feedback failure or observed fault/collision is not
+        # recoverable data loss: stop the remaining physical movements.
+        safety_errors = {}
+        if result["logging"].get("robot_error"):
+            safety_errors["robot_error"] = result["logging"]["robot_error"]
+        feedback_stats = result["logging"].get("robot", {})
+        if isinstance(feedback_stats, dict):
+            for key in ("error_samples", "collision_samples"):
+                if feedback_stats.get(key, 0):
+                    safety_errors[key] = feedback_stats[key]
+        if safety_errors:
+            result["status"] = "failed"
+            result["safety_errors"] = safety_errors
+            success = False
 
         # Never attempt automatic recovery motion after a failed trial.
         if connected and success:
@@ -313,6 +356,7 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
     total_cases = len(cases)
     total_trials = total_cases * repetitions
     completed = 0
+    partial = 0
     failed = 0
     attempted = 0
     all_trials = []
@@ -339,6 +383,9 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
             ("payload_kg", "Payload kg"),
             ("csv_path", "Trajectory CSV"),
             ("minimum_duration_s", "Min duration s"),
+            ("aheadtime", "Aheadtime"),
+            ("gain", "Gain"),
+            ("global_speed_factor", "Global speed %"),
         ):
             if key in case and case[key] is not None:
                 parts.append(f"{label}={case[key]}")
@@ -420,6 +467,9 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
                     "global_trial": global_index,
                     "status": "planned",
                 }
+                for key in ("aheadtime", "gain", "global_speed_factor"):
+                    if key in case:
+                        record[key] = case[key]
 
                 if execute:
                     try:
@@ -427,7 +477,7 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
                         result = run_trial(cfg, case, folder, robot=robot)
                         record["status"] = result["status"]
 
-                        if record["status"] != "completed":
+                        if record["status"] not in ("completed", "partial"):
                             abort = True
 
                     except BaseException as exc:
@@ -445,14 +495,19 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
                             log("    [ANALYSIS] Metrics saved")
                         except Exception as exc:
                             record["analysis_error"] = repr(exc)
-                            record["status"] = "failed"
-                            abort = True
+                            if record["status"] in ("completed", "partial") and not abort:
+                                record["status"] = "partial"
+                            else:
+                                record["status"] = "failed"
+                                abort = True
                             log(f"    [ANALYSIS ERROR] {exc!r}")
 
                 attempted += 1
 
                 if record["status"] == "completed":
                     completed += 1
+                elif record["status"] == "partial":
+                    partial += 1
                 elif record["status"] == "failed":
                     failed += 1
 
@@ -467,7 +522,7 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
                 log(f"    STATUS: {record['status'].upper()}")
                 log(f"    Trial duration: {format_time(elapsed_trial)}")
                 log(f"    Progress: {attempted}/{total_trials} ({percent:.1f}%)")
-                log(f"    Completed: {completed} | Failed: {failed}")
+                log(f"    Completed: {completed} | Partial: {partial} | Failed: {failed}")
                 log(f"    Remaining: {remaining}")
 
                 if attempted > 0 and not abort:
@@ -505,6 +560,7 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
     log("=" * 66)
     log(f"EXPERIMENT FINISHED: {experiment.upper()}")
     log(f"Completed: {completed}/{total_trials}")
+    log(f"Partial recordings: {partial}")
     log(f"Failed: {failed}")
     log(f"Not attempted: {total_trials - attempted}")
     log(f"Total elapsed: {format_time(time.perf_counter() - batch_start)}")

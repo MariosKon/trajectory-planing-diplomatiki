@@ -35,7 +35,7 @@ python main.py --experiment ruckig --repetitions 1
 python main.py --experiment cubic --csv PATH_TO_POINTS.csv --repetitions 1
 ```
 
-Cubic, quintic, trapezoidal and Double-S each use a supplied trajectory CSV **per invocation** in this branch. The planned 3×3 offline/Ruckig matrix is **not yet implemented**. MoveJ still requires validated joint-space endpoints; the payload helper currently defines only one load. Camera-video analysis is not yet implemented.
+Cubic, quintic, trapezoidal and Double-S each use a supplied trajectory CSV **per invocation** in this branch. The dedicated `servop_behavior` experiment has its own MATLAB cubic generator and committed reference CSV in `experiments/servop_behavior/`; it varies servo tracking parameters while keeping the same Cartesian MoveL path. The planned 3×3 offline/Ruckig matrix is **not yet implemented**. MoveJ still requires validated joint-space endpoints; the payload helper currently defines only one load. Camera-video analysis is not yet implemented.
 
 ## Current measurement configuration
 
@@ -77,3 +77,29 @@ Each batch writes `trial_summary.csv` and `experiment_summary.json`, and include
 - Check the tool, payload, start/end poses, connection and device settings before supervised trials.
 - Failed motion or acquisition attempts are recorded and abort the batch. No automatic recovery movement is attempted after failure.
 - The base SDK is deliberately unchanged.
+
+## ServoP behavior experiment (cubic Cartesian reference)
+
+Use the separate [ServoP experiment folder](experiments/servop_behavior/README.md). The committed CSV was generated from the same normalized cubic polynomial as the MATLAB script, and the MATLAB script can regenerate it.
+
+```powershell
+python main.py --experiment servop_behavior --list-cases
+python main.py --experiment servop_behavior --case 1 --repetitions 1
+# Only after supervised validation of the real robot and trajectory:
+python main.py --experiment servop_behavior --case 1 --repetitions 1 --execute
+```
+
+ServoJ has its own joint-space cubic experiment; it must not reuse the Cartesian ServoP reference.
+
+## ServoJ behavior experiment (cubic joint-space reference)
+
+Use [ServoJ experiment folder](experiments/servoj_behavior/README.md) for
+the exact specified six-joint endpoints, MATLAB generator, committed 30 ms
+reference CSV, safety checks and nine tracking-parameter cases.
+
+```powershell
+python main.py --experiment servoj_behavior --list-cases
+python main.py --experiment servoj_behavior --case 1 --repetitions 1
+# Real movement ONLY after supervised checks:
+python main.py --experiment servoj_behavior --case 1 --repetitions 1 --execute
+```
