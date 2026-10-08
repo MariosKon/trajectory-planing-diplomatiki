@@ -1,7 +1,7 @@
 """Rigol waveform acquisition with calibrated, time-aligned electrical data.
 
 Instrument times are oscilloscope/trigger-relative, NOT automatically host time.
-Original channel samples are retained, while rigol_scope.csv is a preview.
+Display waveforms are default; optional RAW acquisition is diagnostic only.
 """
 from __future__ import annotations
 
@@ -38,6 +38,7 @@ class RigolScopeLogger:
         current_A_per_unit: float | None = None,
         voltage_V_per_unit: float = 1.0,
         wait_full_screen: bool = True,
+        download_raw: bool = False,
     ):
         if download_points < 1 or max_output_points < 2:
             raise ValueError("Acquisition and output point counts must be positive")
@@ -62,6 +63,7 @@ class RigolScopeLogger:
         self.current_A_per_unit = current_A_per_unit
         self.voltage_V_per_unit = voltage_V_per_unit
         self.wait_full_screen = bool(wait_full_screen)
+        self.download_raw = bool(download_raw)
         self.scope = None
         self.resource_manager = None
         self.t0 = None
@@ -90,6 +92,8 @@ class RigolScopeLogger:
         self.metadata["scope_time_reference"] = "oscilloscope trigger-relative; not aligned with host event timestamps"
         self.metadata["requested_horizontal_scale_s_per_div"] = self.horizontal_scale_s_per_div
         self.metadata["requested_memory_depth"] = self.download_points
+        self.metadata["download_raw"] = self.download_raw
+        self.metadata["expected_waveform_source"] = "NORM_DISPLAY"
         self.metadata["current_A_per_unit"] = self.current_A_per_unit
         self.metadata["voltage_V_per_unit"] = self.voltage_V_per_unit
         try:
@@ -115,12 +119,13 @@ class RigolScopeLogger:
             if self.horizontal_scale_s_per_div is not None:
                 self.scope.write(f":TIM:SCAL {self.horizontal_scale_s_per_div}")
             # Configure depth BEFORE starting capture, not during it.
-            self.scope.write(f":ACQ:MDEP {self.download_points}")
+            if self.download_raw:
+                self.scope.write(f":ACQ:MDEP {self.download_points}")
             self.scope.write(":TRIG:SWE AUTO")
             self.scope.query("*OPC?")
             self.metadata["horizontal_scale_s_per_div"] = self._query_optional(":TIM:SCAL?")
             self.metadata["memory_depth"] = self._query_optional(":ACQ:MDEP?")
-            if self.metadata["memory_depth"] != str(self.download_points):
+            if self.download_raw and self.metadata["memory_depth"] != str(self.download_points):
                 self.metadata["warnings"].append(
                     f"Scope memory-depth readback {self.metadata['memory_depth']!r} differs from requested {self.download_points}"
                 )
@@ -317,10 +322,14 @@ class RigolScopeLogger:
             display_traces = {}
             for channel in (self.current_channel, self.voltage_channel):
                 display_traces[channel] = self._download_display_waveform(channel)
-            current_t, current_raw = self._download_waveform(self.current_channel)
-            voltage_t, voltage_raw = self._download_waveform(self.voltage_channel)
-            self._save_channel(self.current_channel, current_t, current_raw)
-            self._save_channel(self.voltage_channel, voltage_t, voltage_raw)
+            raw_traces = {}
+            if self.download_raw:
+                for channel in (self.current_channel, self.voltage_channel):
+                    raw_t, raw_values = self._download_waveform(channel)
+                    self._save_channel(channel, raw_t, raw_values)
+                    raw_traces[channel] = (raw_t, raw_values)
+            else:
+                self.metadata["raw_download_skipped"] = True
 
             # The DS1202Z-E RAW channel BYTE data in actual experiments can
             # disagree with the displayed waveform (including reversed CH1
@@ -344,10 +353,7 @@ class RigolScopeLogger:
             displayed_voltage = np.interp(t, dv_t, dv_values)
 
             self.metadata["raw_display_comparison"] = {}
-            for channel, raw_t, raw_values in (
-                (self.current_channel, current_t, current_raw),
-                (self.voltage_channel, voltage_t, voltage_raw),
-            ):
+            for channel, (raw_t, raw_values) in raw_traces.items():
                 display_t, display_values = display_traces[channel]
                 overlapping = ((display_t >= raw_t[0]) &
                                (display_t <= raw_t[-1]))
@@ -402,7 +408,7 @@ class RigolScopeLogger:
                 and self.metadata["acquisition_duration_covered"]
             )
             self.metadata["warnings"].append(
-                "Power and energy use 1200-point NORM display data; "
+                "Power and energy use NORM display data; "
                 "not motion-only energy. RAW scaling remains unverified."
             )
             self.sample = int(t.size)
