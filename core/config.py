@@ -36,6 +36,8 @@ class Config:
     camera_url: str | None = None
     camera_pre_delay_s: float = 2.0
     camera_stop_delay_s: float = 2.0
+    robot_logger_pre_delay_s: float = 0.5
+    robot_logger_post_delay_s: float = 1.0
     rigol_pre_delay_s: float = 1.5
     rigol_stop_delay_s: float = 1.0
 
@@ -68,6 +70,8 @@ class Config:
             raise ValueError("Rigol timebase must be positive")
         if not isinstance(self.rigol_download_raw, bool):
             raise ValueError('rigol_download_raw must be true or false')
+        if self.robot_logger_pre_delay_s < 0 or self.robot_logger_post_delay_s < 0:
+            raise ValueError("Robot logger delays must be >= 0")
         if self.rigol_pre_delay_s < 0:
             raise ValueError("rigol_pre_delay_s must be >= 0")
         if self.camera_stop_delay_s < 0:
