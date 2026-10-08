@@ -19,13 +19,13 @@ class RecordingRobotControl:
 
 
 class ConfigureMotionSpeedTests(unittest.TestCase):
-    def test_movel_case_applies_case_speed_to_global_speed_factor(self):
+    def test_movel_case_keeps_global_speed_at_100(self):
         control = RecordingRobotControl()
         robot = type("Robot", (), {"robot_control": control})()
 
         configure_motion_speed(robot, {"mode": "movel", "speed": 75})
 
-        self.assertEqual(control.speed_factors, [75])
+        self.assertEqual(control.speed_factors, [100])
 
     def test_non_movel_cases_do_not_change_global_speed(self):
         control = RecordingRobotControl()
@@ -35,14 +35,16 @@ class ConfigureMotionSpeedTests(unittest.TestCase):
 
         self.assertEqual(control.speed_factors, [])
 
-    def test_default_acquisition_delays_are_disabled(self):
+    def test_default_acquisition_delays_match_configuration(self):
         cfg = Config()
 
-        self.assertEqual(cfg.settle_s, 0.0)
-        self.assertEqual(cfg.camera_pre_delay_s, 0.0)
-        self.assertEqual(cfg.camera_stop_delay_s, 0.0)
-        self.assertEqual(cfg.rigol_pre_delay_s, 0.0)
-        self.assertEqual(cfg.rigol_stop_delay_s, 0.0)
+        self.assertEqual(cfg.settle_s, 3.0)
+        self.assertEqual(cfg.camera_pre_delay_s, 2.0)
+        self.assertEqual(cfg.camera_stop_delay_s, 2.0)
+        self.assertEqual(cfg.rigol_pre_delay_s, 1.5)
+        self.assertEqual(cfg.robot_logger_pre_delay_s, 0.5)
+        self.assertEqual(cfg.robot_logger_post_delay_s, 1.0)
+        self.assertEqual(cfg.rigol_stop_delay_s, 1.0)
 
     def test_slow_move_does_not_add_a_fixed_settle_delay(self):
         robot = type("Robot", (), {

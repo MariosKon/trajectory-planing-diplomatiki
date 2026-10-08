@@ -18,8 +18,9 @@ def load_points(path):
 def configure_motion_speed(robot, case):
     """Apply the per-case speed setting before a motion command."""
     if case.get("mode") in ("movel", "movej"):
-        speed = case.get("speed", 100)
-        response = robot.robot_control.SpeedFactor(speed)
+        # Case speed is already supplied as MovL/MovJ v=... below.
+        # Do not apply it a second time as a global scale.
+        response = robot.robot_control.SpeedFactor(100)
         check_response(response)
         return response
     return None
@@ -38,6 +39,8 @@ def execute_motion(robot, cfg, case, manager, run_dir):
         manager.robot.set_commanded_point(target)
         speed = case.get("speed", 100)
         accel = case.get("acceleration", 100)
+        manager.event("MOTION_PARAMETERS", f"mode={mode}; v={speed}; a={accel}; global_speed=100")
+        print(f"[{mode.upper()}] v={speed}% a={accel}% global=100%", flush=True)
         if mode == "movel":
             response = robot.motion.MovL(
                 target, CoordinateType.CARTESIAN, a=accel, v=speed
@@ -48,7 +51,7 @@ def execute_motion(robot, cfg, case, manager, run_dir):
             )
         check_response(response)
         wait_for_motion(robot, cfg.motion_timeout_s)
-        return {"command_count": 1, "response": str(response)}
+        return {"command_count": 1, "response": str(response), "speed_percent": speed, "acceleration_percent": accel, "elapsed_s": time.perf_counter()-started}
 
     if mode == "csv":
         points = load_points(case["csv_path"])
@@ -215,11 +218,23 @@ def run_trial(cfg, case, run_dir, robot=None):
         if speed_response is not None:
             print(
                 f"[ROBOT] Global speed factor set to "
-                f"{case['speed']}%", flush=True
+                "100% (case speed applied to motion command)", flush=True
             )
         print("[LOGGING] Starting robot, Rigol and camera loggers", flush=True)
         manager.start()
         print("[LOGGING] Acquisition started", flush=True)
+        if manager.rigol_started:
+            rigol_start = manager.rigol.metadata.get("host_start_perf_s")
+            if isinstance(rigol_start, (int, float)):
+                rigol_lead_s = time.perf_counter() - rigol_start
+                manager.event(
+                    "RIGOL_TO_MOTION_LEAD",
+                    f"seconds={rigol_lead_s:.6f}",
+                )
+                print(
+                    f"[RIGOL] :RUN-to-motion command lead: {rigol_lead_s:.3f}s",
+                    flush=True,
+                )
         manager.event("MOTION_START", str(case))
         print("[MOTION] Executing trajectory", flush=True)
         result["motion"] = execute_motion(
@@ -242,10 +257,19 @@ def run_trial(cfg, case, run_dir, robot=None):
     finally:
         print("[LOGGING] Stopping acquisition and saving data", flush=True)
         result["logging"] = manager.stop()
+        if "rigol_error" in result["logging"] or "robot_error" in result["logging"]:
+            result["status"] = "failed"
+            success = False
+        for key in ("rigol", "camera"):
+            report = result["logging"].get(key, {})
+            if isinstance(report, dict) and report.get("error"):
+                result["status"] = "failed"
+                success = False
 
         # Never attempt automatic recovery motion after a failed trial.
         if connected and success:
             try:
+                check_response(robot.robot_control.SpeedFactor(cfg.slow_speed))
                 slow_move(robot, cfg.home, CoordinateType.JOINT, cfg)
                 result["error_ids"] = str(
                     robot.robot_control.GetErrorID()
@@ -350,9 +374,13 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
 
     try:
         for case_index, case in enumerate(cases, start=1):
+            matrix_index = int(case.get("matrix_case_index", case_index))
+            matrix_count = int(case.get("matrix_case_count", total_cases))
             log("")
             log("-" * 66)
-            log(f"TEST CASE {case_index}/{total_cases}")
+            log(f"TEST CASE {matrix_index}/{matrix_count}" +
+                (f" (selected {case_index}/{total_cases})"
+                 if matrix_count != total_cases else ""))
             log(case_description(case))
             log("-" * 66)
 
@@ -366,7 +394,7 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
 
                 folder = (
                     root
-                    / f"case_{case_index:03d}"
+                    / f"case_{matrix_index:03d}"
                     / f"trial_{trial_index:03d}"
                 )
                 folder.mkdir(parents=True, exist_ok=False)
@@ -378,14 +406,16 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
 
                 log("")
                 log(f">>> TRIAL {global_index}/{total_trials}")
-                log(f"    Case: {case_index}/{total_cases}")
+                log(f"    Matrix case: {matrix_index}/{matrix_count}")
                 log(f"    Repetition: {trial_index}/{repetitions}")
                 log(f"    Trials remaining (including this): {remaining_before}")
 
                 trial_start = time.perf_counter()
 
                 record = {
-                    "case": case_index,
+                    "case": matrix_index,
+                    "matrix_case_count": matrix_count,
+                    "selected_case": case_index,
                     "trial": trial_index,
                     "global_trial": global_index,
                     "status": "planned",
