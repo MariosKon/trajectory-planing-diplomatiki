@@ -27,6 +27,11 @@ class Config:
     rigol_resource: str | None = None
     rigol_current_channel: str = "CHAN1"
     rigol_voltage_channel: str = "CHAN2"
+    rigol_horizontal_scale_s_per_div: float | None = 5.0
+    rigol_memory_depth: int = 60000
+    rigol_preview_points: int = 2000
+    rigol_current_A_per_unit: float | None = None
+    rigol_voltage_V_per_unit: float = 1.0
     camera_url: str | None = None
     camera_pre_delay_s: float = 2.0
     camera_stop_delay_s: float = 2.0
@@ -58,3 +63,11 @@ class Config:
             raise ValueError("Invalid tool index")
         if self.payload_kg is not None and self.payload_kg < 0:
             raise ValueError("Invalid payload")
+        if self.rigol_horizontal_scale_s_per_div is not None and self.rigol_horizontal_scale_s_per_div <= 0:
+            raise ValueError("Rigol timebase must be positive")
+        if self.rigol_memory_depth < 2 or self.rigol_preview_points < 2:
+            raise ValueError("Rigol point counts must be >= 2")
+        if self.rigol_current_A_per_unit is not None and self.rigol_current_A_per_unit <= 0:
+            raise ValueError("Invalid current calibration")
+        if self.rigol_voltage_V_per_unit <= 0:
+            raise ValueError("Invalid voltage calibration")
