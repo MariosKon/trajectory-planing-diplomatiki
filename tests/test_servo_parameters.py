@@ -100,6 +100,33 @@ class ServoParameterStudyTests(unittest.TestCase):
             self.assertEqual(len(rows), 5)
             self.assertEqual(rows[0]["gain"], "800.0")
 
+    def test_servop_commands_receive_case_parameters(self):
+        from core.runner import execute_motion
+        with tempfile.TemporaryDirectory() as tmp:
+            path = make_csv(tmp, "ServoP", samples=5)
+            case = cases_for("servop_params", self.config, str(path))[6]
+            robot = MagicMock()
+            manager = MagicMock()
+            manager.robot.t0 = 0.0
+            from types import ModuleType
+            import sys
+            sdk = ModuleType("dobot_sdk")
+            sdk.CoordinateType = MagicMock()
+            old = sys.modules.get("dobot_sdk")
+            sys.modules["dobot_sdk"] = sdk
+            try:
+                with patch("core.runner.time.sleep"), patch("core.runner.wait_for_motion"), patch("core.runner.check_response"):
+                    result = execute_motion(robot, self.config, case, manager, Path(tmp))
+            finally:
+                if old is None:
+                    sys.modules.pop("dobot_sdk", None)
+                else:
+                    sys.modules["dobot_sdk"] = old
+            self.assertEqual(robot.motion.ServoP.call_count, 5)
+            for call in robot.motion.ServoP.call_args_list:
+                self.assertEqual(call.args[1:], (0.03, 80.0, 300.0))
+            self.assertEqual(result["aheadtime"], 80.0)
+
     def test_changed_csv_is_rejected_before_command(self):
         from core.runner import execute_motion
         with tempfile.TemporaryDirectory() as tmp:
