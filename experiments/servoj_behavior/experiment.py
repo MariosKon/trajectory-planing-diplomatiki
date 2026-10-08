@@ -39,7 +39,7 @@ def validate_joint_csv(path, config):
     n = len(points)
     if n != minimum_intervals() + 1:
         raise ValueError(
-            "f"ServoJ cubic CSV requires exactly {minimum_intervals()+1} samples "
+            f"ServoJ cubic CSV requires exactly {minimum_intervals()+1} samples "
             f"at {SAMPLE_PERIOD_S:.3f}s for the requested T"
         )
     if any(point.mode != "ServoJ" for point in points):
