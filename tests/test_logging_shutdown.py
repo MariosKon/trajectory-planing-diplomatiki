@@ -37,6 +37,26 @@ class LoggingShutdownOrderTests(unittest.TestCase):
             sleep.assert_called_once_with(2.0)
             self.assertIn("camera", result)
 
+    def test_rigol_lead_waits_from_actual_run_timestamp(self):
+        with TemporaryDirectory() as tmp:
+            cfg = Config(
+                camera_url=None,
+                rigol_resource="FAKE_VISA",
+                rigol_pre_delay_s=1.5,
+            )
+            with patch("loggers.manager.RigolScopeLogger"):
+                manager = LoggingManager(cfg, tmp)
+            manager.robot = MagicMock()
+            manager.robot.first_packet.wait.return_value = True
+            manager.robot.t0 = 100.0
+            manager.rigol.metadata = {"host_start_perf_s": 100.0}
+            with patch("loggers.manager.time.perf_counter", side_effect=[100.2, 101.5]):
+                with patch("loggers.manager.time.sleep") as sleep:
+                    manager.start()
+            sleep.assert_called_once()
+            self.assertAlmostEqual(sleep.call_args.args[0], 1.3)
+            self.assertTrue(manager.rigol_started)
+
     def test_camera_stops_even_when_rigol_raises(self):
         with TemporaryDirectory() as tmp:
             cfg = Config(
