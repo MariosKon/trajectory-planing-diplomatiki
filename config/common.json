@@ -54,5 +54,7 @@
   "rigol_preview_points": 1200,
   "rigol_current_A_per_unit": null,
   "rigol_voltage_V_per_unit": 1,
-  "rigol_download_raw": false
+  "rigol_download_raw": false,
+  "robot_logger_pre_delay_s": 0.5,
+  "robot_logger_post_delay_s": 1
 }
