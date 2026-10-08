@@ -144,7 +144,7 @@ def execute_motion(robot, cfg, case, manager, run_dir):
                 )
             elif command_mode == "ServoP":
                 response = robot.motion.ServoP(
-                    values, period, cfg.aheadtime, cfg.gain
+                    values, period, aheadtime, gain
                 )
             else:
                 raise ValueError(f"Unsupported mode: {command_mode}")
