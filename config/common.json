@@ -47,7 +47,7 @@
   "rigol_voltage_channel": "CHAN2",
   "camera_pre_delay_s": 0,
   "camera_stop_delay_s": 2,
-  "rigol_pre_delay_s": 1,
+  "rigol_pre_delay_s": 1.5,
   "rigol_stop_delay_s": 0,
   "rigol_horizontal_scale_s_per_div": 0.5,
   "rigol_memory_depth": 60000,
