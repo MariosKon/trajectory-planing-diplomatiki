@@ -1,210 +1,79 @@
 # DOBOT Trajectory Experiments
 
-Refactored experiment framework.
+Python experiment framework for a DOBOT manipulator, MATLAB-generated trajectories, and synchronized-in-software recording from robot feedback, a Rigol DS1202Z-E, and an RTSP camera.
 
-## Structure
-- `core/` — robot control, configuration, repeated trials, analysis
-- `loggers/` — robot, Rigol, camera, logging manager
-- `experiments/` — independent experiment helpers and MATLAB planners
-- `results/` — one directory per experiment batch
+## Layout
 
-## Dependencies
+- `core/` — configuration, robot motion, batch runner, post-trial metrics
+- `loggers/` — independent robot feedback, Rigol, and RTSP recorders
+- `experiments/` — experiment definitions and MATLAB trajectory generators
+- `TCP-IP-Python-V4/` — original DOBOT SDK (unchanged)
+- `tests/` — mocked/offline regression tests
+- `results/` — a timestamped directory per batch and independent directory per trial
 
-Install the DOBOT SDK dependencies and:
-
-    pip install -r requirements.txt
-
-The original `TCP-IP-Python-V4` folder belongs in this project's root.
-
-## Dry run
-
-    python main.py --experiment movel --repetitions 3
-
-No physical robot commands are sent.
-
-## Real execution
-
-    python main.py --experiment movel --repetitions 3 --execute
-
-## Offline trajectory
-
-First run the corresponding MATLAB script and provide its CSV:
-
-    python main.py --experiment cubic --csv PATH_TO_POINTS.csv --execute
-
-## Ruckig
-
-    python main.py --experiment ruckig --repetitions 3 --execute
-
-## Outputs
-
-Each trial records:
-- feedback.csv and feedback_raw.bin
-- commands.csv when relevant
-- rigol_scope.csv when enabled
-- camera.mp4 when enabled
-- events.csv
-- result.json
-- metrics.csv and metrics.json
-
-Each batch records trial_summary.csv and experiment_summary.json.
-
-Camera analysis is intentionally not implemented.
-
-IMPORTANT:
-Hardware behavior, positioning, timing, and safety must be verified
-with a supervised single trial before any repeated experiment.
-
-
-## Rigol measurement validation (October 2026)
-
-The Rigol logger now configures horizontal scale and memory depth **before**
-starting acquisition. It saves original channel samples in
-`rigol_chan1_raw.csv` and `rigol_chan2_raw.csv`, and the oscilloscope
-preambles, actual sampling intervals, time windows, and warnings in
-`rigol_metadata.json`.
-
-Configure these settings in `config/common.json`:
-
-```json
-{
-  "rigol_horizontal_scale_s_per_div": 5.0,
-  "rigol_memory_depth": 60000,
-  "rigol_preview_points": 2000,
-  "rigol_current_A_per_unit": null,
-  "rigol_voltage_V_per_unit": 1.0
-}
-```
-
-**Calibration:** When CHAN1 is measured in amperes, the logger interprets its
-readings as current. When it is in volts, explicitly supply the verified
-A-per-displayed-volt conversion factor; otherwise current and power values
-will be NaN rather than fictitious measurements. The scope's `time_s` axis
-is trigger-relative; it is **not** a host timestamp and cannot by itself
-identify the exact motion interval. Energy currently covers the oscilloscope
-acquisition window, not necessarily the robot's movement alone.
-
-The combined `rigol_scope.csv` is a downsampled visualization, with power
-calculated at original sampling resolution. For scientific processing use
-the original channel CSVs and recorded waveform preambles. Validate the
-instrument's horizontal span before any robot motion. The model may reject
-memory-depth settings that it does not support.
-
-For MoveL and MoveJ, the global speed factor is set to 100% during the
-measured motion, and the case speed percentage is passed only to the
-motion command. Preparation and return-home use the configured slow global
-factor. Do not start unattended batch tests until target-arrival verification
-and device acquisition have been validated with a supervised single run.
-
-Offline tests:
+## Installation and offline checks
 
 ```powershell
+pip install -r requirements.txt
 python -m unittest discover -s tests -v
 ```
 
-## Select a single test case
-
-List the numbered parameter combinations without connecting to the robot:
+No `--execute` means **dry run**: no physical motion. Inspect and verify robot pose, tool/payload, available clearances, camera address, and oscilloscope setup before real runs.
 
 ```powershell
 python main.py --experiment movel --list-cases
+python main.py --experiment movel --case 1 --repetitions 1
+python main.py --experiment movel --case 1 --repetitions 1 --execute
 ```
 
-Check case 1 without robot movement:
+`--case` is one-based; the chosen matrix index is preserved in the trial folder and summary, even when only one case is run. Without `--case`, all configured cases run.
+
+Other experiments:
 
 ```powershell
-python main.py --experiment movel --case 1 --repetitions 1
+python main.py --experiment ruckig --repetitions 1
+python main.py --experiment cubic --csv PATH_TO_POINTS.csv --repetitions 1
 ```
 
-After confirming the configuration and under supervision only, add `--execute`.
-The `--case` option is 1-based and rejects an invalid index. If omitted, all cases are selected.
+Cubic, quintic, trapezoidal and Double-S each use a supplied trajectory CSV **per invocation** in this branch. The planned 3×3 offline/Ruckig matrix is **not yet implemented**. MoveJ still requires validated joint-space endpoints; the payload helper currently defines only one load. Camera-video analysis is not yet implemented.
 
-## October 8 Rigol ROLL-mode diagnosis
+## Current measurement configuration
 
-The observed DS1202Z-E recording had a 5 s/div ROLL display but exported only ~3.21 seconds of data at scope time -30 to -26.79 seconds. These are not equivalent to the current display; old acquisition energy results must not be used. The logger now explicitly requires `:TIM:MODE MAIN`, checks `:TRIG:STAT?` reports STOP, and waits at least one configured 12-division screen span (default 0.5 s/div = 6 s) from the RUN command before stopping. This is a deliberately conservative diagnostic capture and is not precise hardware synchronization with the robot. Inspect `rigol_screen.png`, `rigol_metadata.json`, and both channel CSVs and validate behavior with a supervised single run. `rigol_horizontal_scale_s_per_div` can be adjusted to suit longer motion; do not automatically use 5 s/div for short moves because it gives a 60-second window. Instrument readback `:ACQ:MDEP?` returning `AUTO` is a warning, not proof of the requested fixed record length.
+The authoritative device settings are in `config/common.json`; review them before executing any movement. Defaults in the Python `Config` class may differ when a JSON setting overrides them.
 
-## Rigol display-vs-RAW polarity (October 8 follow-up)
+| Field | Current value | Meaning |
+| --- | --- | --- |
+| `rigol_horizontal_scale_s_per_div` | 0.5 | 6-second nominal screen span (12 divisions) |
+| `rigol_pre_delay_s` | 1.5 | Minimum Rigol `:RUN`-to-motion lead (software clock) |
+| `rigol_download_raw` | `false` | Skip multi-million-point RAW transfers in normal experiments |
+| `rigol_preview_points` | 1200 | Output points (normally NORM display's 1,200 samples) |
+| `robot_logger_pre_delay_s` | 0.5 | Approximate robot feedback lead before motion |
+| `robot_logger_post_delay_s` | 1 | Additional robot feedback after `MOTION_END` |
+| `camera_stop_delay_s` | 2 | Extra video after Rigol transfer completes |
 
-A supervised MAIN-mode acquisition covered the complete 6-second window, but
-the Rigol CH1 NORM display trace had a positive current peak (~1.58 A)
-while the RAW BYTE preamble conversion yielded a negative peak (~-1.61 A).
-The old RAW-derived report (-100.76 J acquisition energy) is invalid.
-The 1200-point display trace (with CH2 voltage near 47.7 V) gives an
-approximate +67.14 J **full-acquisition signed energy** and +74.58 W peak;
-this is diagnostic, not motion-only energy or verified absolute calibration.
+The camera begins before the scope. Robot feedback begins near the end of scope pre-roll, continues through motion and one second afterward, and stops before scope transfer. The camera continues recording during scope acquisition/download and stops after the additional delay. MP4 output is constant-frame-rate; duplicate frames can preserve elapsed playback time if RTSP frames arrive slowly. The true received frame count and wall duration are returned in camera logging metadata.
 
-Until RAW scaling is resolved against the actual instrument, `rigol_scope.csv`
-and `core/analysis.py` use the instrument's NORM display traces for I and V
-to avoid the observed sign reversal. Raw channel CSVs and preambles remain
-available for investigation. Metadata includes `power_trace_source`,
-`raw_display_comparison`, and `movement_only_energy_valid=false`. This
-reduces the reported time resolution to the display's 1200 points; do not
-compare short high-frequency transients or calculate motion-only energy
-without hardware trigger synchronization. Do not silently reverse the sign
-of RAW samples as a workaround. Validate current-probe polarity and ratio
-with an independently known load before interpreting electrical energy.
+Rigol must use `MAIN` (not `ROLL`) timebase mode. The logger checks `STOP` before retrieving waveforms and saves a scope screenshot, `rigol_metadata.json`, `rigol_chan1_display.csv`, `rigol_chan2_display.csv`, and `rigol_scope.csv` (current/voltage/power). The normal 1,200-point six-second window is approximately **200 samples/s**. This is sufficient for coarse movement power profiles, **not high-frequency transients**.
 
-## Motion-window robot metrics
+Optional `rigol_download_raw: true` is for debugging only; the DS1202Z-E RAW BYTE preamble conversion produced reversed CHAN1 polarity compared with its NORM display waveform on observed trials. Do not interpret RAW-derived power without independently validating that conversion. The scope's time axis is trigger-relative, **not synchronized with robot timestamps**. `rigol_acquisition_energy_J` is signed power integrated over the **whole scope capture**, *not* verified movement-only energy. Current-probe polarity and scale also require independent validation before publishing absolute energy.
 
-From this change, robot tracking RMSE, maximum tracking deviation, and
-joint/TCP speed peaks use only feedback records whose host timestamps are
-between `MOTION_START` and `MOTION_END`. The metrics include
-`robot_samples`, `robot_motion_samples`, and
-`robot_motion_window_valid`; without a valid motion window, tracking
-metrics are left null instead of reporting idle/download time as motion.
-The robot feedback logger is stopped before long Rigol VISA RAW transfers.
+## MoveL / MoveJ
 
-Scope energy remains a **full-window estimate** and is **not aligned** to
-the robot motion interval. The latest measured NORM waveform gave about
-66.92 J over a six-second acquisition with 73.63 W peak power, but the
-current excursion starts at the left screen boundary. Those results remain
-diagnostic pending controlled acquisition placement and calibration.
+Measured MoveL / MoveJ commands set the global speed factor to 100% and pass speed/acceleration percentages as individual movement arguments (`v`/`a`). Preparation and return-home use the slow global factor configured for those phases. Event records capture the requested motion settings and command response.
 
-## Reduced-bandwidth Rigol and delayed camera shutdown
+Hardware movement completion and limits must be checked in supervised single-run tests. Do not start an unattended batch on unverified paths.
 
-Routine experiments use **NORM display waveforms only**, by default.
-Set `rigol_download_raw: false` in `config/common.json`: this skips the
-millions-of-samples RAW USB transfers entirely, not just saving the CSVs.
-The standard 0.5 s/div window has 1200 displayed points across six seconds
-(200 Hz). Each trial saves `rigol_scope.csv`,
-`rigol_chan1_display.csv`, `rigol_chan2_display.csv`, the instrument
-screen PNG, and diagnostic metadata. Scope sampling is separate from the
-30 ms ServoP command period.
+## Metrics and outputs
 
-For instrument debugging only, set `rigol_download_raw: true` to enable
-full-resolution RAW downloads and waveform consistency comparisons.
-This is expensive and should remain disabled for batch experiments. The
-display mode has lower effective bandwidth and is unsuitable for
-high-frequency current ripple or brief transients.
+Each trial records (as applicable) `feedback.csv`, `feedback_raw.bin`, `events.csv`, `camera.mp4`, `rigol_scope.csv`, `rigol_metadata.json`, `rigol_screen.png`, `result.json`, `metrics.json`, `metrics.csv`, and `commands.csv` for externally streamed trajectories. Optional Rigol RAW outputs are only produced when specifically enabled.
 
-The logger stops robot feedback after MOTION_END, then downloads Rigol
-waveforms **while video is still recording**; only then does it wait
-`camera_stop_delay_s` (default in common.json: 2 seconds) and stop
-the RTSP recorder. This includes video of the fluid continuing to settle
-after movement and scope transfer. The MP4 writer uses a constant output
-frame rate and repeats the last received frame as necessary to preserve
-elapsed playback duration; repeated frames are not new camera observations.
-Camera metadata includes actual decoded frame count and wall-clock
-recording duration. Verify video duration locally before long experiments.
+The analysis uses only robot feedback between `MOTION_START` and `MOTION_END` for tracking RMSE and joint/TCP velocity maxima, to avoid bias from stationary preparation and logger download intervals. Fields `robot_motion_window_valid` and `robot_motion_samples` help diagnose missing or incomplete events. The scope metrics are **not motion-window filtered** until scope/robot synchronization is validated.
 
-## Robot feedback logging window
+Each batch writes `trial_summary.csv` and `experiment_summary.json`, and includes CLI progress, repetition count, remaining cases, and estimated time.
 
-Robot feedback is now intentionally started **after** camera and Rigol setup.
-With the default values it begins about 0.5 seconds before the measured
-motion and continues for 1.0 second after MOTION_END. This removes
-instrument-startup dead time from the feedback recording while preserving
-pre- and post-motion feedback. Configurable fields in common.json:
+## Safety and validation
 
-```json
-{
-  "rigol_pre_delay_s": 1.5,
-  "robot_logger_pre_delay_s": 0.5,
-  "robot_logger_post_delay_s": 1.0
-}
-```
-
-The exact lead is software-clock based and subject to the time required for
-the first feedback packet. The camera still stops after the Rigol transfer
-plus its configured additional delay. Tracking metrics continue to use
-only MOTION_START to MOTION_END. On failure, logger cleanup still runs and
-attempts to preserve the available recordings.
+- A successful mocked unit test does **not** verify physical robot movement or measurement calibration.
+- Check the tool, payload, start/end poses, connection and device settings before supervised trials.
+- Failed motion or acquisition attempts are recorded and abort the batch. No automatic recovery movement is attempted after failure.
+- The base SDK is deliberately unchanged.
