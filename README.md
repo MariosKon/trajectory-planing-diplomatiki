@@ -143,3 +143,19 @@ compare short high-frequency transients or calculate motion-only energy
 without hardware trigger synchronization. Do not silently reverse the sign
 of RAW samples as a workaround. Validate current-probe polarity and ratio
 with an independently known load before interpreting electrical energy.
+
+## Motion-window robot metrics
+
+From this change, robot tracking RMSE, maximum tracking deviation, and
+joint/TCP speed peaks use only feedback records whose host timestamps are
+between `MOTION_START` and `MOTION_END`. The metrics include
+`robot_samples`, `robot_motion_samples`, and
+`robot_motion_window_valid`; without a valid motion window, tracking
+metrics are left null instead of reporting idle/download time as motion.
+The robot feedback logger is stopped before long Rigol VISA RAW transfers.
+
+Scope energy remains a **full-window estimate** and is **not aligned** to
+the robot motion interval. The latest measured NORM waveform gave about
+66.92 J over a six-second acquisition with 73.63 W peak power, but the
+current excursion starts at the left screen boundary. Those results remain
+diagnostic pending controlled acquisition placement and calibration.
