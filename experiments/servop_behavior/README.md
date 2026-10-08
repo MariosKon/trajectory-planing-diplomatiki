@@ -1,7 +1,6 @@
 # ServoP behavior — fixed Cartesian cubic trajectory
 
-This folder is self-contained for the **ServoP** experiment. ServoJ will get a
-separate folder and joint-space CSV when validated joint waypoints are supplied.
+This folder is self-contained for the **ServoP** experiment; ServoJ uses its own joint-space CSV.
 
 ## Reference trajectory
 
@@ -12,10 +11,9 @@ The exact same configured endpoints as MoveL:
 - 800 mm along Y, constant TCP orientation.
 - MATLAB script: `make_servop_cubic_csv.m` (hardcoded endpoints, no CSV input).
 - Committed reference: `points_servop_cubic.csv`, with `mode,x1,...,x6` columns.
-- 30 ms setpoint period, 67 intervals / 68 points, planned duration **2.01 s**.
-- Polynomial: `s(u)=3u^2-2u^3`. Limits used to choose T: `vMax=600 mm/s`,
-  `aMax=2000 mm/s²`; these are **reference bounds**, not verified robot limits.
-- `T=max(1.5*800/600,sqrt(6*800/2000))`, rounded up to a 30 ms multiple.
+- Requested duration **T = 2.00 s** (no Vmax/Amax inputs).
+- Grid-aligned duration **2.01 s**, with 67 intervals / 68 points at 30 ms.
+- Cubic: `s(u)=3u^2-2u^3`; theoretical peak speed ≈ **597.01 mm/s**, acceleration ≈ **1188.09 mm/s²**, not imposed safety limits.
 - Cubic acceleration changes discontinuously at the start/end when motion
   transitions from standstill; avoid interpreting jerk as bounded there.
 
