@@ -44,6 +44,9 @@ class MotionWindowMetricTests(unittest.TestCase):
             self.assertEqual(result["joint_tracking_rmse"], 1)
             self.assertEqual(result["tcp_position_tracking_rmse_mm"], 1)
             self.assertTrue(result["robot_motion_window_valid"])
+            # Peak velocities must exclude the artificial 999 values after motion.
+            self.assertAlmostEqual(result["joint_velocity_max"], 6 ** 0.5)
+            self.assertAlmostEqual(result["tcp_speed_max"], 3 ** 0.5)
 
     def test_missing_motion_events_do_not_produce_tracking_metrics(self):
         with tempfile.TemporaryDirectory() as tmp:
