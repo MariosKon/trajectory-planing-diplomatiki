@@ -121,7 +121,7 @@ class RigolTests(unittest.TestCase):
 
     def test_configured_timebase_before_run(self):
         with TemporaryDirectory() as root:
-            logger = self.make_logger(root, horizontal_scale_s_per_div=5.0)
+            logger = self.make_logger(root, horizontal_scale_s_per_div=5.0, download_raw=True)
             scope = MagicMock()
             scope.query.side_effect = lambda command: {
                 "*IDN?": "RIGOL,MOCK,123,1",
