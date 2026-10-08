@@ -1,12 +1,13 @@
+"""Rigol waveform acquisition with calibrated, time-aligned electrical data.
+
+Instrument times are oscilloscope/trigger-relative, NOT automatically host time.
+Original channel samples are retained, while rigol_scope.csv is a preview.
+"""
 from __future__ import annotations
+
 import csv
 import json
-import queue
-import socket
-import struct
-import threading
 import time
-from datetime import datetime, timezone
 from pathlib import Path
 
 try:
@@ -19,22 +20,8 @@ try:
 except ImportError:
     pyvisa = None
 
-try:
-    import cv2
-except ImportError:
-    cv2 = None
-
-PACKET_SIZE = 1440
-FEEDBACK_PORT = 30004
-MAGIC = 0x0123456789ABCDEF
-TIMESTAMP_DIFFERENCE_TOLERANCE_MS = 1.0
-
-def utc_now():
-    return datetime.now(timezone.utc).isoformat()
 
 class RigolScopeLogger:
-    """Acquire a scope burst before motion, stop it after motion, and aggregate 8 ms means after download."""
-
     def __init__(
         self,
         resource_name: str,
@@ -45,354 +32,248 @@ class RigolScopeLogger:
         voltage_channel: str = "CHAN2",
         power_channel: str = "MATH",
         window_period_s: float = 8e-3,
-        download_points: int = 5000,
+        download_points: int = 60000,
         max_output_points: int = 2000,
+        horizontal_scale_s_per_div: float | None = 5.0,
+        current_A_per_unit: float | None = None,
+        voltage_V_per_unit: float = 1.0,
     ):
+        if download_points < 1 or max_output_points < 2:
+            raise ValueError("Acquisition and output point counts must be positive")
+        if horizontal_scale_s_per_div is not None and horizontal_scale_s_per_div <= 0:
+            raise ValueError("Horizontal scale must be positive")
+        if current_A_per_unit is not None and current_A_per_unit <= 0:
+            raise ValueError("Current calibration factor must be positive")
+        if voltage_V_per_unit <= 0:
+            raise ValueError("Voltage calibration factor must be positive")
         self.resource_name = resource_name.strip()
         self.run_dir = Path(run_dir)
         self.run_dir.mkdir(parents=True, exist_ok=True)
-        self.sample_period_s = sample_period_s
+        self.sample_period_s = sample_period_s  # historical setting; instrument determines real XINC
         self.timeout_ms = timeout_ms
         self.current_channel = current_channel
         self.voltage_channel = voltage_channel
         self.power_channel = power_channel
-        self.window_period_s = float(window_period_s)
-        self.download_points = max(1, int(download_points))
-        self.max_output_points = max(1, int(max_output_points))
+        self.window_period_s = window_period_s
+        self.download_points = download_points
+        self.max_output_points = max_output_points
+        self.horizontal_scale_s_per_div = horizontal_scale_s_per_div
+        self.current_A_per_unit = current_A_per_unit
+        self.voltage_V_per_unit = voltage_V_per_unit
         self.scope = None
-        self.t0: float | None = None
+        self.resource_manager = None
+        self.t0 = None
         self.sample = 0
-        self.error: str | None = None
+        self.error = None
         self._started = False
+        self.metadata = {"warnings": [], "channels": {}}
+
+    def _query_optional(self, command: str) -> str | None:
+        try:
+            return self.scope.query(command).strip()
+        except Exception as exc:
+            self.metadata["warnings"].append(f"{command}: {exc!r}")
+            return None
+
+    def _save_metadata(self):
+        (self.run_dir / "rigol_metadata.json").write_text(
+            json.dumps(self.metadata, indent=2, default=str), encoding="utf-8"
+        )
 
     def start(self, reference_t0: float | None = None) -> None:
-        if pyvisa is None:
-            raise RuntimeError("pyvisa is required for Rigol oscilloscope logging. Install it with 'pip install pyvisa'.")
-        if np is None:
-            raise RuntimeError("numpy is required for waveform-based Rigol logging. Install it with 'pip install numpy'.")
-
-        if self.scope is not None:
-            try:
-                self.scope.close()
-            except Exception:
-                pass
-            self.scope = None
-
-        self.t0 = time.perf_counter() if reference_t0 is None else float(reference_t0)
-
-        visa_library = None
-        if Path(r"C:\Windows\System32\visa64.dll").exists():
+        if pyvisa is None or np is None:
+            raise RuntimeError("Rigol logging requires pyvisa and numpy")
+        self.t0 = time.perf_counter() if reference_t0 is None else reference_t0
+        self.metadata["host_start_perf_s"] = time.perf_counter()
+        self.metadata["scope_time_reference"] = "oscilloscope trigger-relative; not aligned with host event timestamps"
+        self.metadata["requested_horizontal_scale_s_per_div"] = self.horizontal_scale_s_per_div
+        self.metadata["requested_memory_depth"] = self.download_points
+        self.metadata["current_A_per_unit"] = self.current_A_per_unit
+        self.metadata["voltage_V_per_unit"] = self.voltage_V_per_unit
+        try:
             visa_library = r"C:\Windows\System32\visa64.dll"
-
-        try:
-            rm = pyvisa.ResourceManager(visa_library) if visa_library else pyvisa.ResourceManager()
-        except ValueError:
-            rm = pyvisa.ResourceManager("@py")
-
-        self.scope = rm.open_resource(self.resource_name)
-        self.scope.timeout = self.timeout_ms
-
-        try:
-            scope_idn = self.scope.query("*IDN?").strip()
+            if Path(visa_library).exists():
+                self.resource_manager = pyvisa.ResourceManager(visa_library)
+            else:
+                self.resource_manager = pyvisa.ResourceManager()
+            self.scope = self.resource_manager.open_resource(self.resource_name)
+            self.scope.timeout = self.timeout_ms
+            self.metadata["instrument_id"] = self.scope.query("*IDN?").strip()
             self.scope.write("*CLS")
             self.scope.write(":STOP")
-            self.scope.write(":WAV:MODE NORM")
+            self.scope.write(":ACQ:TYPE NORM")
             self.scope.write(":WAV:FORM BYTE")
-            self.scope.write(":ACQ:TYPE NORMAL")
+            if self.horizontal_scale_s_per_div is not None:
+                self.scope.write(f":TIM:SCAL {self.horizontal_scale_s_per_div}")
+            # Configure depth BEFORE starting capture, not during it.
+            self.scope.write(f":ACQ:MDEP {self.download_points}")
+            self.scope.write(":TRIG:SWE AUTO")
+            self.scope.query("*OPC?")
+            self.metadata["horizontal_scale_s_per_div"] = self._query_optional(":TIM:SCAL?")
+            self.metadata["memory_depth"] = self._query_optional(":ACQ:MDEP?")
+            self.metadata["sample_rate"] = self._query_optional(":ACQ:SRAT?")
+            for channel in (self.current_channel, self.voltage_channel):
+                self.metadata["channels"][channel] = {
+                    "unit": self._query_optional(f":{channel}:UNIT?"),
+                    "scale": self._query_optional(f":{channel}:SCAL?"),
+                    "offset": self._query_optional(f":{channel}:OFFS?"),
+                }
+            self.scope.write(":RUN")
+            self._started = True
+            self._save_metadata()
+        except Exception:
+            self.close()
+            raise
 
-        except Exception as exc:
-            raise RuntimeError(
-                f"Unable to talk to Rigol scope {self.resource_name}. "
-                "Check the USB connection, VISA backend, and scope state."
-            ) from exc
-
-        (self.run_dir / "scope_metadata.txt").write_text(
-            f"resource={self.resource_name}\nidentifier={scope_idn}\n",
-            encoding="utf-8",
-        )
-
-        self.scope.write(":RUN")
-        print(f"Rigol scope {self.resource_name} started, capturing waveforms...")
-        self._started = True
-        time.sleep(0.2)
-
-        # Keep the acquisition buffer bounded so the full waveform transfer is
-        # fast enough for normal experiments while the output is downsampled
-        # later to a manageable number of points.
-        self.scope.write(f":ACQ:MDEP {self.download_points}")
-        self.scope.query("*OPC?")
-
-        print(
-            "Memory depth:",
-            self.scope.query(":ACQ:MDEP?").strip()
-        )
-
-        print(
-            "Sample rate:",
-            self.scope.query(":ACQ:SRAT?").strip()
-        )
-
-        print(
-            "Timebase:",
-            self.scope.query(":TIM:SCAL?").strip()
-        )
-        # while(1):
-        #         pass
-
-    def _download_waveform(self, channel):
+    def _download_waveform(self, channel: str):
         if self.scope is None:
-            raise RuntimeError("Rigol scope is not connected")
-
+            raise RuntimeError("Rigol not connected")
         self.scope.write(f":WAV:SOUR {channel}")
         self.scope.write(":WAV:MODE RAW")
         self.scope.write(":WAV:FORM BYTE")
-
-        preamble = self.scope.query(":WAV:PRE?").strip().split(",")
-
-        points = int(float(preamble[2]))
-        xinc = float(preamble[4])
-        xorig = float(preamble[5])
-        xref = float(preamble[6])
-        yinc = float(preamble[7])
-        yorig = float(preamble[8])
-        yref = float(preamble[9])
-
-        chunk_size = 250_000
+        preamble_text = self.scope.query(":WAV:PRE?").strip()
+        p = preamble_text.split(",")
+        if len(p) < 10:
+            raise ValueError(f"Invalid waveform preamble for {channel}: {preamble_text}")
+        points = int(float(p[2]))
+        xinc, xorig, xref = (float(v) for v in p[4:7])
+        yinc, yorig, yref = (float(v) for v in p[7:10])
+        if points < 2 or xinc <= 0 or yinc == 0:
+            raise ValueError(f"Invalid waveform dimensions for {channel}: {preamble_text}")
         chunks = []
-
-        # A 1 second timeout is rather aggressive for deep-memory downloads.
-        old_timeout = self.scope.timeout
-        self.scope.timeout = 10_000
-
+        original_timeout = self.scope.timeout
+        self.scope.timeout = max(original_timeout, 10000)
         try:
-            for start in range(1, points + 1, chunk_size):
-                stop = min(start + chunk_size - 1, points)
-
-                self.scope.write(f":WAV:STAR {start}")
-                self.scope.write(f":WAV:STOP {stop}")
-
-                data = self.scope.query_binary_values(
-                    ":WAV:DATA?",
-                    datatype="B",
-                    is_big_endian=False,
-                    container=np.array,
+            for first in range(1, points + 1, 250000):
+                last = min(first + 249999, points)
+                self.scope.write(f":WAV:STAR {first}")
+                self.scope.write(f":WAV:STOP {last}")
+                chunk = self.scope.query_binary_values(
+                    ":WAV:DATA?", datatype="B",
+                    is_big_endian=False, container=np.array,
                 )
-
-                chunks.append(data)
-
+                chunks.append(np.asarray(chunk, dtype=np.uint8))
         finally:
-            self.scope.timeout = old_timeout
+            self.scope.timeout = original_timeout
+        raw = np.concatenate(chunks)
+        if raw.size != points:
+            raise ValueError(
+                f"{channel}: preamble requested {points} samples, downloaded {raw.size}"
+            )
+        # Rigol waveform preamble conversion: keep floating-point arithmetic.
+        values = (raw.astype(float) - yorig - yref) * yinc
+        times = (np.arange(points, dtype=float) - xref) * xinc + xorig
+        self.metadata["channels"][channel]["preamble"] = p
+        self.metadata["channels"][channel]["raw_points"] = points
+        self.metadata["channels"][channel]["time_start_s"] = float(times[0])
+        self.metadata["channels"][channel]["time_end_s"] = float(times[-1])
+        self.metadata["channels"][channel]["sample_interval_s"] = xinc
+        self.metadata["channels"][channel]["raw_byte_min"] = int(raw.min())
+        self.metadata["channels"][channel]["raw_byte_max"] = int(raw.max())
+        if raw.min() == 0 or raw.max() == 255:
+            self.metadata["warnings"].append(
+                f"{channel}: BYTE waveform reaches an ADC endpoint; check clipping"
+            )
+        return times, values
 
-        raw = (
-            np.concatenate(chunks)
-            if chunks
-            else np.array([], dtype=np.uint8)
-        )
-
-        values = (
-            raw.astype(float) - yref - yorig
-        ) * yinc
-
-        time_s = (
-            np.arange(raw.size, dtype=float) - xref
-        ) * xinc + xorig
-        time_s = self._center_time_axis(time_s)
-
-        return time_s, values
+    def _save_channel(self, channel: str, times, values):
+        name = f"rigol_{channel.lower()}_raw.csv"
+        with (self.run_dir / name).open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(["scope_time_s", "displayed_value"])
+            writer.writerows(zip(times, values))
 
     @staticmethod
-    def _center_time_axis(time_s: Any) -> np.ndarray:
-        """Set the midpoint of the downloaded acquisition to zero seconds."""
-        time_s = np.asarray(time_s, dtype=float)
-        if time_s.size == 0:
-            return time_s
-        midpoint = float((time_s[0] + time_s[-1]) / 2.0)
-        return time_s - midpoint
+    def _current_factor(unit: str | None, manual_factor: float | None):
+        if manual_factor is not None:
+            return manual_factor
+        normalized = (unit or "").strip().upper().replace('"', "")
+        return 1.0 if normalized in {"A", "AMP", "AMPS", "AMPERE"} else None
 
-    def _downsample(
-        self,
-        time_s: Any,
-        values: Any,
-        max_points: int | None = None,
-    ) -> tuple[Any, Any]:
-        """Average consecutive samples to a bounded output size."""
-        time_s = np.asarray(time_s, dtype=float)
-        values = np.asarray(values, dtype=float)
-        limit = self.max_output_points if max_points is None else max(1, int(max_points))
-
-        if time_s.size != values.size or time_s.size <= limit:
-            return time_s, values
-
-        bin_edges = np.linspace(0, time_s.size, limit + 1, dtype=int)
-        downsampled_time = np.empty(limit, dtype=float)
-        downsampled_values = np.empty(limit, dtype=float)
-
-        for index in range(limit):
-            start = int(bin_edges[index])
-            stop = int(bin_edges[index + 1])
-            block = values[start:stop]
-            if block.size == 0:
-                block = values[start:start + 1]
-            downsampled_time[index] = float(np.mean(time_s[start:stop]))
-            downsampled_values[index] = float(np.mean(block))
-
-        downsampled_time[0] = float(time_s[0])
-        downsampled_time[-1] = float(time_s[-1])
-        downsampled_values[0] = float(values[0])
-        downsampled_values[-1] = float(values[-1])
-        return downsampled_time, downsampled_values
-
-    def _save_raw_waveform_csv(self, channel: str, time_s: Any, values: Any) -> None:
-        if values.size == 0:
-            return
-        filename = f"rigol_{channel.lower()}_raw.csv"
-        data = np.column_stack((time_s.astype(float), values.astype(float)))
-        with (self.run_dir / filename).open("w", newline="", encoding="utf-8") as handle:
-            np.savetxt(handle, data, delimiter=",", header="time_s,value", comments="", fmt="%.18g")
-
-    def _save_combined_raw_csv(
-        self,
-        current_time: Any,
-        current: Any,
-        voltage_time: Any,
-        voltage: Any,
-        power_time: Any,
-        power: Any,
-    ) -> None:
-        max_len = max(current.size, voltage.size, power.size)
-        rows = []
-        for idx in range(max_len):
-            rows.append(
-                [
-                    idx + 1,
-                    float(current_time[idx]) if idx < current_time.size else float(idx),
-                    float(current[idx]) if idx < current.size else float("nan"),
-                    float(voltage[idx]) if idx < voltage.size else float("nan"),
-                    float(power[idx]) if idx < power.size else float("nan"),
-                ]
-            )
-
-        with (self.run_dir / "rigol_scope.csv").open("w", newline="", encoding="utf-8") as handle:
-            np.savetxt(
-                handle,
-                np.asarray(rows, dtype=float),
-                delimiter=",",
-                header="sample,time_s,current_A,voltage_V,power_W",
-                comments="",
-                fmt="%.18g",
-            )
-
-    def _wait_until_stopped(self, timeout_s: float = 3.0) -> None:
-        if self.scope is None:
-            raise RuntimeError("Rigol scope is not connected")
-
-        deadline = time.perf_counter() + timeout_s
-
-        while time.perf_counter() < deadline:
-            state = self.scope.query(":TRIG:STAT?").strip().upper()
-            print(f"Rigol state: {state}")
-
-            if state == "STOP":
-                return
-
-            time.sleep(0.05)
-
-        raise TimeoutError("Rigol did not enter STOP state")
-
+    def _downsample(self, times, current, voltage, power):
+        n = len(times)
+        if n <= self.max_output_points:
+            return times, current, voltage, power
+        edges = np.linspace(0, n, self.max_output_points + 1, dtype=int)
+        def reduced(a):
+            return np.array([a[edges[i]:edges[i + 1]].mean()
+                             for i in range(self.max_output_points)])
+        return reduced(times), reduced(current), reduced(voltage), reduced(power)
 
     def stop(self) -> dict:
         if self.scope is None:
-            return {
-                "resource": self.resource_name,
-                "samples": self.sample,
-                "error": "No Rigol scope opened",
-            }
-
+            return {"resource": self.resource_name, "samples": 0,
+                    "error": "Rigol acquisition was not started"}
         try:
-            print("Stopping Rigol...")
-
             self.scope.write(":STOP")
             self.scope.query("*OPC?")
+            self.metadata["host_stop_perf_s"] = time.perf_counter()
+            current_t, current_raw = self._download_waveform(self.current_channel)
+            voltage_t, voltage_raw = self._download_waveform(self.voltage_channel)
+            self._save_channel(self.current_channel, current_t, current_raw)
+            self._save_channel(self.voltage_channel, voltage_t, voltage_raw)
 
-            self._wait_until_stopped()
+            # Never pair samples merely by array index if the timebases differ.
+            lo = max(float(current_t[0]), float(voltage_t[0]))
+            hi = min(float(current_t[-1]), float(voltage_t[-1]))
+            mask = (current_t >= lo) & (current_t <= hi)
+            if not np.any(mask):
+                raise ValueError("Rigol channels have no overlapping time interval")
+            t = current_t[mask]
+            displayed_current = current_raw[mask]
+            displayed_voltage = np.interp(t, voltage_t, voltage_raw)
 
-            print("Rigol confirmed STOPPED")
-
-            # RAW memory download only from real acquisition channels
-            current_time, current = self._download_waveform(
-                self.current_channel
-            )
-
-            voltage_time, voltage = self._download_waveform(
-                self.voltage_channel
-            )
-
-            # Do NOT request MATH in RAW mode.
-            # Calculate power locally.
-            n = min(len(current), len(voltage))
-
-            current_time = current_time[:n]
-            current = current[:n]
-
-            voltage_time = voltage_time[:n]
-            voltage = voltage[:n]
-
-            current_time, current = self._downsample(current_time, current)
-            voltage_time, voltage = self._downsample(voltage_time, voltage)
-            power_time = current_time
+            unit = self.metadata["channels"][self.current_channel]["unit"]
+            current_factor = self._current_factor(unit, self.current_A_per_unit)
+            if current_factor is None:
+                self.metadata["warnings"].append(
+                    "Current channel unit is not confirmed as A. "
+                    "Set rigol_current_A_per_unit for an external sensor."
+                )
+            current = (displayed_current * current_factor
+                       if current_factor is not None
+                       else np.full_like(displayed_current, np.nan))
+            voltage = displayed_voltage * self.voltage_V_per_unit
+            # Multiply at original resolution before reducing for CSV output.
             power = current * voltage
-
-            self._save_raw_waveform_csv(
-                self.current_channel,
-                current_time,
-                current,
-            )
-
-            self._save_raw_waveform_csv(
-                self.voltage_channel,
-                voltage_time,
-                voltage,
-            )
-
-            self._save_raw_waveform_csv(
-                "power",
-                power_time,
-                power,
-            )
-
-            self._save_combined_raw_csv(
-                current_time,
-                current,
-                voltage_time,
-                voltage,
-                power_time,
-                power,
-            )
-
-            self.sample = n
-
-            return {
-                "resource": self.resource_name,
-                "samples": self.sample,
-                "error": None,
-            }
-
+            self.metadata["power_calibrated"] = current_factor is not None
+            self.metadata["waveform_overlap_duration_s"] = float(t[-1] - t[0])
+            self.sample = int(t.size)
+            if self.sample < 2:
+                raise ValueError("Insufficient samples in common waveform window")
+            t, current, voltage, power = self._downsample(t, current, voltage, power)
+            with (self.run_dir / "rigol_scope.csv").open(
+                "w", newline="", encoding="utf-8"
+            ) as handle:
+                writer = csv.writer(handle)
+                writer.writerow(["sample", "time_s", "current_A", "voltage_V", "power_W"])
+                writer.writerows(
+                    (i, float(x), float(a), float(v), float(p))
+                    for i, (x, a, v, p) in enumerate(zip(t, current, voltage, power), 1)
+                )
+            self.metadata["preview_points"] = len(t)
+            self._save_metadata()
+            return {"resource": self.resource_name, "samples": self.sample,
+                    "error": None, "warnings": self.metadata["warnings"],
+                    "power_calibrated": self.metadata["power_calibrated"]}
         except Exception as exc:
             self.error = repr(exc)
-            print(f"Rigol error: {self.error}")
-
-            return {
-                "resource": self.resource_name,
-                "samples": self.sample,
-                "error": self.error,
-            }
-
+            self.metadata["error"] = self.error
+            self._save_metadata()
+            return {"resource": self.resource_name, "samples": self.sample,
+                    "error": self.error}
         finally:
-            try:
-                if self.scope is not None:
-                    self.scope.close()
-            except Exception:
-                pass
+            self.close()
 
-            self.scope = None
-            self._started = False
+    def close(self):
+        if self.scope is not None:
+            try:
+                self.scope.close()
+            finally:
+                self.scope = None
+        if self.resource_manager is not None:
+            try:
+                self.resource_manager.close()
+            finally:
+                self.resource_manager = None
+        self._started = False
