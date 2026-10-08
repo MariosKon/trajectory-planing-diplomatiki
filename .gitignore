@@ -6,3 +6,4 @@ core/__pycache__/
 examples/__pycache__/
 logger/__pycache__/
 TCP-IP-Python-V4/dobot_sdk/core/__pycache__/
+*.pyc
