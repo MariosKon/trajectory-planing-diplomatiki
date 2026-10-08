@@ -101,3 +101,20 @@ Offline tests:
 ```powershell
 python -m unittest discover -s tests -v
 ```
+
+## Select a single test case
+
+List the numbered parameter combinations without connecting to the robot:
+
+```powershell
+python main.py --experiment movel --list-cases
+```
+
+Check case 1 without robot movement:
+
+```powershell
+python main.py --experiment movel --case 1 --repetitions 1
+```
+
+After confirming the configuration and under supervision only, add `--execute`.
+The `--case` option is 1-based and rejects an invalid index. If omitted, all cases are selected.
