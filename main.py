@@ -20,7 +20,12 @@ def select_cases(cases, case_number):
             f"--case must be between 1 and {len(cases)} "
             f"(received {case_number})"
         )
-    return [cases[case_number - 1]]
+    # Preserve the original matrix number through the entire batch,
+    # even though only one case will be executed.
+    case = dict(cases[case_number - 1])
+    case["matrix_case_index"] = case_number
+    case["matrix_case_count"] = len(cases)
+    return [case]
 
 
 def main():
