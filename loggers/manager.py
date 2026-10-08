@@ -65,6 +65,15 @@ class LoggingManager:
                 result["camera_error"] = repr(exc)
             self.camera_started = False
 
+        # Save only useful robot feedback, not the potentially long
+        # USB waveform transfer that follows. MOTION_END was logged by runner.
+        if self.robot_started:
+            try:
+                result["robot"] = self.robot.stop()
+            except Exception as exc:
+                result["robot_error"] = repr(exc)
+            self.robot_started = False
+
         if self.rigol is not None:
             try:
                 if self.rigol_started:
@@ -77,10 +86,4 @@ class LoggingManager:
                 result["rigol_error"] = repr(exc)
             self.rigol_started = False
 
-        if self.robot_started:
-            try:
-                result["robot"] = self.robot.stop()
-            except Exception as exc:
-                result["robot_error"] = repr(exc)
-            self.robot_started = False
         return result
