@@ -9,8 +9,7 @@ clc;
 qStart = [26, 53.8, 55.2, 71, 116, -180.2];
 qEnd   = [-50, 54, 54.9, 71.4, 40, -180.2];
 Ts = 0.030;               % 30 ms
-vMax_deg_s = 40;          % per-joint bound (planning only)
-aMax_deg_s2 = 60;         % per-joint bound (planning only)
+T = 2.0;                 % requested duration [s]
 makePlot = true;
 
 % Always save beside THIS script rather than in MATLAB's working directory.
@@ -26,8 +25,8 @@ outputCsv = fullfile(scriptDir, 'points_servoj_cubic.csv');
 if numel(qStart) ~= 6 || numel(qEnd) ~= 6 || any(~isfinite([qStart qEnd]))
     error('Six finite joint angles are required for start and end.');
 end
-if Ts <= 0 || vMax_deg_s <= 0 || aMax_deg_s2 <= 0
-    error('Ts, vMax and aMax must be positive.');
+if ~isfinite(T) || Ts <= 0 || T <= 0
+    error('T and Ts must be positive.');
 end
 
 delta = qEnd - qStart;
@@ -36,8 +35,7 @@ if D <= 0
     error('The start and end joint positions must differ.');
 end
 
-Tmin = max(1.5*D/vMax_deg_s, sqrt(6*D/aMax_deg_s2));
-nIntervals = max(1, ceil(Tmin/Ts - 1e-12));
+nIntervals = max(2, ceil(T/Ts - 1e-12));
 Tfinal = nIntervals*Ts;
 
 t = (0:nIntervals)'*Ts;
@@ -73,7 +71,7 @@ fprintf('\nCSV VERIFIED ON DISK\n');
 fprintf('Exact file: %s\n', outputCsv);
 fprintf('File size: %d bytes\n', fileInfo.bytes);
 fprintf('Joint displacements [deg]: %s\n', mat2str(delta));
-fprintf('Samples: %d | Ts: %.3f s | duration: %.3f s\n', numel(t), Ts, Tfinal);
+fprintf('Samples: %d | Ts: %.3f s | requested T: %.3f s | actual T: %.3f s\n', numel(t), Ts, T, Tfinal);
 fprintf('Peak angular speed: %.3f deg/s\n', max(abs(sd))*D);
 fprintf('Peak angular acceleration: %.3f deg/s^2\n', max(abs(sdd))*D);
 fprintf('Reference jerk magnitude: %.3f deg/s^3\n', max(abs(sddd))*D);
