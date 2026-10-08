@@ -19,6 +19,11 @@ class LoggingManager:
                 run_dir,
                 current_channel=cfg.rigol_current_channel,
                 voltage_channel=cfg.rigol_voltage_channel,
+                horizontal_scale_s_per_div=cfg.rigol_horizontal_scale_s_per_div,
+                download_points=cfg.rigol_memory_depth,
+                max_output_points=cfg.rigol_preview_points,
+                current_A_per_unit=cfg.rigol_current_A_per_unit,
+                voltage_V_per_unit=cfg.rigol_voltage_V_per_unit,
             )
         if cfg.camera_url:
             self.camera = RTSPVideoRecorder(cfg.camera_url, run_dir)
@@ -51,18 +56,6 @@ class LoggingManager:
     def stop(self):
         result = {}
 
-        if self.rigol is not None:
-            try:
-                if self.rigol_started:
-                    if self.cfg.rigol_stop_delay_s:
-                        time.sleep(self.cfg.rigol_stop_delay_s)
-                    result["rigol"] = self.rigol.stop()
-                elif self.rigol.scope is not None:
-                    self.rigol.scope.close()
-            except Exception as exc:
-                result["rigol_error"] = repr(exc)
-            self.rigol_started = False
-
         if self.camera is not None and self.camera_started:
             try:
                 if self.cfg.camera_stop_delay_s:
@@ -71,6 +64,18 @@ class LoggingManager:
             except Exception as exc:
                 result["camera_error"] = repr(exc)
             self.camera_started = False
+
+        if self.rigol is not None:
+            try:
+                if self.rigol_started:
+                    if self.cfg.rigol_stop_delay_s:
+                        time.sleep(self.cfg.rigol_stop_delay_s)
+                    result["rigol"] = self.rigol.stop()
+                elif self.rigol.scope is not None:
+                    self.rigol.close()
+            except Exception as exc:
+                result["rigol_error"] = repr(exc)
+            self.rigol_started = False
 
         if self.robot_started:
             try:
