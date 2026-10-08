@@ -118,3 +118,7 @@ python main.py --experiment movel --case 1 --repetitions 1
 
 After confirming the configuration and under supervision only, add `--execute`.
 The `--case` option is 1-based and rejects an invalid index. If omitted, all cases are selected.
+
+## October 8 Rigol ROLL-mode diagnosis
+
+The observed DS1202Z-E recording had a 5 s/div ROLL display but exported only ~3.21 seconds of data at scope time -30 to -26.79 seconds. These are not equivalent to the current display; old acquisition energy results must not be used. The logger now explicitly requires `:TIM:MODE MAIN`, checks `:TRIG:STAT?` reports STOP, and waits at least one configured 12-division screen span (default 0.5 s/div = 6 s) from the RUN command before stopping. This is a deliberately conservative diagnostic capture and is not precise hardware synchronization with the robot. Inspect `rigol_screen.png`, `rigol_metadata.json`, and both channel CSVs and validate behavior with a supervised single run. `rigol_horizontal_scale_s_per_div` can be adjusted to suit longer motion; do not automatically use 5 s/div for short moves because it gives a 60-second window. Instrument readback `:ACQ:MDEP?` returning `AUTO` is a warning, not proof of the requested fixed record length.
