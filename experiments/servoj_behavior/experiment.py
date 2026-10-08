@@ -10,8 +10,7 @@ from experiments.csv_servo.points import load_points
 START_JOINTS = (26.0, 53.8, 55.2, 71.0, 116.0, -180.2)
 END_JOINTS = (-50.0, 54.0, 54.9, 71.4, 40.0, -180.2)
 SAMPLE_PERIOD_S = 0.030
-VMAX_DEG_S = 40.0
-AMAX_DEG_S2 = 60.0
+REQUESTED_DURATION_S = 2.0
 AHEADTIMES = (20.0, 50.0, 80.0)
 GAINS = (500.0, 300.0, 700.0)
 DEFAULT_CSV = Path(__file__).with_name("points_servoj_cubic.csv")
@@ -19,12 +18,8 @@ TOL_DEG = 1e-4
 
 
 def minimum_intervals():
-    """Minimum cubic duration under jointwise angular speed/accel bounds."""
-    max_displacement = max(abs(b - a) for a, b in zip(START_JOINTS, END_JOINTS))
-    t_from_velocity = 1.5 * max_displacement / VMAX_DEG_S
-    t_from_acceleration = math.sqrt(6 * max_displacement / AMAX_DEG_S2)
-    return max(1, math.ceil(max(t_from_velocity, t_from_acceleration) /
-                             SAMPLE_PERIOD_S - 1e-12))
+    """Fixed 30 ms intervals for requested T; 2.0 s becomes 2.01 s."""
+    return max(2, math.ceil(REQUESTED_DURATION_S / SAMPLE_PERIOD_S - 1e-12))
 
 
 def validate_joint_csv(path, config):
@@ -42,10 +37,10 @@ def validate_joint_csv(path, config):
 
     points = load_points(path, "ServoJ")
     n = len(points)
-    if n < minimum_intervals() + 1:
+    if n != minimum_intervals() + 1:
         raise ValueError(
-            f"ServoJ cubic CSV needs at least {minimum_intervals()+1} samples "
-            f"at {SAMPLE_PERIOD_S:.3f}s for configured reference limits"
+            "f"ServoJ cubic CSV requires exactly {minimum_intervals()+1} samples "
+            f"at {SAMPLE_PERIOD_S:.3f}s for the requested T"
         )
     if any(point.mode != "ServoJ" for point in points):
         raise ValueError("ServoJ experiment accepts only mode=ServoJ rows")
