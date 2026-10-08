@@ -9,7 +9,8 @@ from loggers.rigol_logger import RigolScopeLogger
 
 class RigolTests(unittest.TestCase):
     def make_logger(self, root, **kw):
-        logger = RigolScopeLogger("FAKE", root, max_output_points=3, **kw)
+        max_output_points = kw.pop("max_output_points", 3)
+        logger = RigolScopeLogger("FAKE", root, max_output_points=max_output_points, **kw)
         logger.metadata["channels"] = {
             "CHAN1": {"unit": "V"},
             "CHAN2": {"unit": "V"},
@@ -41,7 +42,10 @@ class RigolTests(unittest.TestCase):
 
     def test_scope_display_current_is_used_when_raw_has_wrong_polarity(self):
         with TemporaryDirectory() as root:
-            logger = self.make_logger(root, horizontal_scale_s_per_div=None)
+            # Keep all 101 display samples so peak power is not averaged into 3 bins.
+            logger = self.make_logger(
+                root, horizontal_scale_s_per_div=None, max_output_points=200
+            )
             logger.metadata["host_start_perf_s"] = 100.0
             logger.metadata["channels"]["CHAN1"]["unit"] = "AMP"
             logger.scope = MagicMock()
@@ -73,7 +77,8 @@ class RigolTests(unittest.TestCase):
             import csv
             with (Path(root) / "rigol_scope.csv").open(newline="") as fh:
                 points = list(csv.DictReader(fh))
-            self.assertGreater(max(float(row["power_W"]) for row in points), 50.0)
+            self.assertEqual(len(points), 101)
+            self.assertAlmostEqual(max(float(row["power_W"]) for row in points), 57.6, places=5)
 
     def test_current_without_calibration_is_unverified(self):
         self.assertIsNone(RigolScopeLogger._current_factor("V", None))
