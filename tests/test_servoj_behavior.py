@@ -24,21 +24,21 @@ class ServoJBehaviorTests(unittest.TestCase):
         self.assertEqual({x["mode"] for x in cases}, {"csv"})
         self.assertEqual(len({x["csv_path"] for x in cases}), 1)
 
-    def test_reference_csv_is_exact_cubic_with_96_samples(self):
-        self.assertEqual(minimum_intervals(), 95)
+    def test_reference_csv_is_exact_cubic_with_68_samples(self):
+        self.assertEqual(minimum_intervals(), 67)
         with DEFAULT_CSV.open(encoding="utf-8", newline="") as handle:
             rows = list(csv.DictReader(handle))
-        self.assertEqual(len(rows), 96)
+        self.assertEqual(len(rows), 68)
         self.assertEqual({row["mode"] for row in rows}, {"ServoJ"})
         for i, row in enumerate(rows):
-            u = i / 95
+            u = i / 67
             s = 3*u*u - 2*u*u*u
             for axis in range(6):
                 actual = float(row[f"j{axis+1}"])
                 expected = START_JOINTS[axis] + (END_JOINTS[axis]-START_JOINTS[axis])*s
                 self.assertAlmostEqual(actual, expected, places=7)
-        self.assertAlmostEqual(95*0.03, 2.85)
-        self.assertAlmostEqual(1.5*76/2.85, 40.0)
+        self.assertAlmostEqual(67*0.03, 2.01)
+        self.assertAlmostEqual(1.5*76/2.01, 56.7164179104)
 
     def test_rejects_wrong_sample_period(self):
         self.config.servo_time_s = 0.020
