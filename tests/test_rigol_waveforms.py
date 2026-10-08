@@ -44,7 +44,8 @@ class RigolTests(unittest.TestCase):
         with TemporaryDirectory() as root:
             # Keep all 101 display samples so peak power is not averaged into 3 bins.
             logger = self.make_logger(
-                root, horizontal_scale_s_per_div=None, max_output_points=200
+                root, horizontal_scale_s_per_div=None, max_output_points=200,
+                download_raw=True
             )
             logger.metadata["host_start_perf_s"] = 100.0
             logger.metadata["channels"]["CHAN1"]["unit"] = "AMP"
@@ -79,6 +80,39 @@ class RigolTests(unittest.TestCase):
                 points = list(csv.DictReader(fh))
             self.assertEqual(len(points), 101)
             self.assertAlmostEqual(max(float(row["power_W"]) for row in points), 57.6, places=5)
+
+    def test_default_skips_raw_waveform_transfer(self):
+        with TemporaryDirectory() as root:
+            logger = self.make_logger(
+                root, horizontal_scale_s_per_div=None,
+                max_output_points=200
+            )
+            logger.metadata["host_start_perf_s"] = 100.0
+            logger.metadata["channels"]["CHAN1"]["unit"] = "AMP"
+            logger.scope = MagicMock()
+            logger.scope.query.side_effect = lambda cmd: (
+                "MAIN" if cmd == ":TIM:MODE?" else "STOP"
+                if cmd == ":TRIG:STAT?" else "1"
+            )
+            t = np.linspace(-1.0, 1.0, 101)
+            logger._download_display_waveform = lambda channel: (
+                t, np.ones_like(t) if channel == "CHAN1"
+                else 48.0 * np.ones_like(t)
+            )
+            logger._download_waveform = MagicMock(
+                side_effect=AssertionError("RAW must not be downloaded")
+            )
+            logger._capture_screen_image = lambda: None
+            logger._confirm_stopped = lambda: None
+            with patch("loggers.rigol_logger.time.perf_counter", return_value=102.0):
+                result = logger.stop()
+            self.assertIsNone(result["error"])
+            self.assertEqual(result["samples"], 101)
+            logger._download_waveform.assert_not_called()
+            from pathlib import Path
+            self.assertFalse((Path(root) / "rigol_chan1_raw.csv").exists())
+            self.assertFalse((Path(root) / "rigol_chan2_raw.csv").exists())
+            self.assertEqual(logger.metadata["raw_download_skipped"], True)
 
     def test_current_without_calibration_is_unverified(self):
         self.assertIsNone(RigolScopeLogger._current_factor("V", None))
