@@ -34,9 +34,10 @@ class RigolScopeLogger:
         window_period_s: float = 8e-3,
         download_points: int = 60000,
         max_output_points: int = 2000,
-        horizontal_scale_s_per_div: float | None = 5.0,
+        horizontal_scale_s_per_div: float | None = 0.5,
         current_A_per_unit: float | None = None,
         voltage_V_per_unit: float = 1.0,
+        wait_full_screen: bool = True,
     ):
         if download_points < 1 or max_output_points < 2:
             raise ValueError("Acquisition and output point counts must be positive")
@@ -60,6 +61,7 @@ class RigolScopeLogger:
         self.horizontal_scale_s_per_div = horizontal_scale_s_per_div
         self.current_A_per_unit = current_A_per_unit
         self.voltage_V_per_unit = voltage_V_per_unit
+        self.wait_full_screen = bool(wait_full_screen)
         self.scope = None
         self.resource_manager = None
         self.t0 = None
@@ -84,7 +86,7 @@ class RigolScopeLogger:
         if pyvisa is None or np is None:
             raise RuntimeError("Rigol logging requires pyvisa and numpy")
         self.t0 = time.perf_counter() if reference_t0 is None else reference_t0
-        self.metadata["host_start_perf_s"] = time.perf_counter()
+        self.metadata["host_setup_begin_perf_s"] = time.perf_counter()
         self.metadata["scope_time_reference"] = "oscilloscope trigger-relative; not aligned with host event timestamps"
         self.metadata["requested_horizontal_scale_s_per_div"] = self.horizontal_scale_s_per_div
         self.metadata["requested_memory_depth"] = self.download_points
@@ -100,7 +102,14 @@ class RigolScopeLogger:
             self.scope.timeout = self.timeout_ms
             self.metadata["instrument_id"] = self.scope.query("*IDN?").strip()
             self.scope.write("*CLS")
+            self.metadata["previous_timebase_mode"] = self._query_optional(":TIM:MODE?")
             self.scope.write(":STOP")
+            # Time/div alone DOES NOT exit roll mode. Explicitly select Y-T mode.
+            self.scope.write(":TIM:MODE MAIN")
+            actual_mode = (self._query_optional(":TIM:MODE?") or "").upper()
+            self.metadata["timebase_mode"] = actual_mode
+            if actual_mode != "MAIN":
+                raise RuntimeError(f"Rigol must be in MAIN mode, got {actual_mode!r}; ROLL waveforms cannot be compared by normal trigger-time axes")
             self.scope.write(":ACQ:TYPE NORM")
             self.scope.write(":WAV:FORM BYTE")
             if self.horizontal_scale_s_per_div is not None:
@@ -111,6 +120,10 @@ class RigolScopeLogger:
             self.scope.query("*OPC?")
             self.metadata["horizontal_scale_s_per_div"] = self._query_optional(":TIM:SCAL?")
             self.metadata["memory_depth"] = self._query_optional(":ACQ:MDEP?")
+            if self.metadata["memory_depth"] != str(self.download_points):
+                self.metadata["warnings"].append(
+                    f"Scope memory-depth readback {self.metadata['memory_depth']!r} differs from requested {self.download_points}"
+                )
             self.metadata["sample_rate"] = self._query_optional(":ACQ:SRAT?")
             for channel in (self.current_channel, self.voltage_channel):
                 self.metadata["channels"][channel] = {
@@ -119,6 +132,8 @@ class RigolScopeLogger:
                     "offset": self._query_optional(f":{channel}:OFFS?"),
                 }
             self.scope.write(":RUN")
+            # Timestamp at the RUN command, not at USB/VISA initialization.
+            self.metadata["host_start_perf_s"] = time.perf_counter()
             self._started = True
             self._save_metadata()
         except Exception:
@@ -258,14 +273,41 @@ class RigolScopeLogger:
                              for i in range(self.max_output_points)])
         return reduced(times), reduced(current), reduced(voltage), reduced(power)
 
+    def _confirm_stopped(self, timeout_s: float = 5.0):
+        """Do not download a moving waveform without verifying STOP."""
+        deadline = time.perf_counter() + timeout_s
+        last_status = None
+        while time.perf_counter() < deadline:
+            last_status = (self.scope.query(":TRIG:STAT?") or "").strip().upper()
+            if last_status == "STOP":
+                self.metadata["trigger_state_after_stop"] = last_status
+                return
+            time.sleep(0.1)
+        self.metadata["trigger_state_after_stop"] = last_status
+        raise TimeoutError(
+            f"Rigol did not confirm STOP (last trigger status {last_status!r})"
+        )
+
     def stop(self) -> dict:
         if self.scope is None:
             return {"resource": self.resource_name, "samples": 0,
                     "error": "Rigol acquisition was not started"}
         try:
+            run_started = self.metadata.get("host_start_perf_s")
+            if self.wait_full_screen and run_started is not None and self.horizontal_scale_s_per_div is not None:
+                target_span_s = 12.0 * self.horizontal_scale_s_per_div
+                remaining_s = target_span_s - (time.perf_counter() - run_started)
+                if remaining_s > 0:
+                    self.metadata["additional_capture_wait_s"] = remaining_s
+                    time.sleep(remaining_s)
             self.scope.write(":STOP")
-            self.scope.query("*OPC?")
             self.metadata["host_stop_perf_s"] = time.perf_counter()
+            self.scope.query("*OPC?")
+            self._confirm_stopped()
+            mode_after = (self._query_optional(":TIM:MODE?") or "").upper()
+            self.metadata["timebase_mode_after_stop"] = mode_after
+            if mode_after != "MAIN":
+                raise RuntimeError(f"Scope changed to {mode_after!r}; expected MAIN")
             self.metadata["host_acquisition_duration_s"] = (
                 self.metadata["host_stop_perf_s"] - self.metadata["host_start_perf_s"]
             )
