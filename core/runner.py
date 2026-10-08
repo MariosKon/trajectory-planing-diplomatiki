@@ -54,8 +54,26 @@ def execute_motion(robot, cfg, case, manager, run_dir):
         return {"command_count": 1, "response": str(response), "speed_percent": speed, "acceleration_percent": accel, "elapsed_s": time.perf_counter()-started}
 
     if mode == "csv":
+        if "servo_mode" in case:
+            from experiments.servo_parameter_study import validate_servo_csv
+            import hashlib
+            info = validate_servo_csv(case["csv_path"], case["servo_mode"])
+            if info["csv_sha256"] != case["csv_sha256"]:
+                raise RuntimeError("Servo trajectory CSV changed after case generation")
+            if len(load_points(case["csv_path"])) != case["point_count"]:
+                raise RuntimeError("Servo trajectory CSV point count changed")
         points = load_points(case["csv_path"])
-        period = cfg.servo_time_s
+        period = float(case.get("servo_time_s", cfg.servo_time_s))
+        aheadtime = float(case.get("aheadtime", cfg.aheadtime))
+        gain = float(case.get("gain", cfg.gain))
+        if not (0.004 <= period <= 3600.0 and
+                20.0 <= aheadtime <= 100.0 and
+                200.0 <= gain <= 1000.0):
+            raise ValueError("Invalid Servo command parameter")
+        if "servo_mode" in case:
+            manager.event("SERVO_PARAMETERS",
+                          f"mode={case['servo_mode']}; t={period}; aheadtime={aheadtime}; gain={gain}; sha256={case['csv_sha256']}")
+            print(f"[SERVO] {case['servo_mode']} t={period}s aheadtime={aheadtime} gain={gain}", flush=True)
         planner = None
     elif mode == "ruckig":
         from experiments.ruckig.planner import OnlineRuckigPlanner
@@ -70,6 +88,7 @@ def execute_motion(robot, cfg, case, manager, run_dir):
         )
         points = None
         period = cfg.servo_time_s
+        aheadtime, gain = cfg.aheadtime, cfg.gain
     else:
         raise ValueError(f"Unknown motion mode: {mode}")
 
@@ -77,6 +96,7 @@ def execute_motion(robot, cfg, case, manager, run_dir):
         "sample", "host_time_s", "mode", "lateness_ms",
         "command_duration_ms", "planner_time_s",
         "planner_calculation_us", "finished",
+        "servo_t_s", "aheadtime", "gain",
     ] + [f"position_{i}" for i in range(1,7)]
 
     count = 0
@@ -111,12 +131,16 @@ def execute_motion(robot, cfg, case, manager, run_dir):
                 late += 1
                 max_lateness = max(max_lateness, -remaining)
 
+            if "servo_mode" in case and command_mode != case["servo_mode"]:
+                raise RuntimeError(
+                    f"CSV command {command_mode} differs from configured {case['servo_mode']}"
+                )
             manager.robot.set_commanded_point(values)
             command_started = time.perf_counter()
 
             if command_mode == "ServoJ":
                 response = robot.motion.ServoJ(
-                    values, period, cfg.aheadtime, cfg.gain
+                    values, period, aheadtime, gain
                 )
             elif command_mode == "ServoP":
                 response = robot.motion.ServoP(
@@ -138,6 +162,9 @@ def execute_motion(robot, cfg, case, manager, run_dir):
                 "planner_time_s": planner_time,
                 "planner_calculation_us": calculation,
                 "finished": finished,
+                "servo_t_s": period,
+                "aheadtime": aheadtime,
+                "gain": gain,
             }
             row.update({
                 f"position_{i}": value
@@ -160,6 +187,9 @@ def execute_motion(robot, cfg, case, manager, run_dir):
             sum(durations)/len(durations)*1000 if durations else None
         ),
         "elapsed_s": time.perf_counter()-started,
+        "servo_time_s": period,
+        "aheadtime": aheadtime,
+        "gain": gain,
     }
 
 def run_trial(cfg, case, run_dir, robot=None):
@@ -199,6 +229,11 @@ def run_trial(cfg, case, run_dir, robot=None):
         slow_move(robot, cfg.home, CoordinateType.JOINT, cfg)
 
         if case["mode"] == "csv":
+            if "servo_mode" in case:
+                from experiments.servo_parameter_study import validate_servo_csv
+                checked = validate_servo_csv(case["csv_path"], case["servo_mode"])
+                if checked["csv_sha256"] != case["csv_sha256"]:
+                    raise RuntimeError("Servo CSV changed; refusing robot movement")
             points = load_points(case["csv_path"])
             start = points[0].values
             coordinate = (
@@ -339,6 +374,10 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
             ("payload_kg", "Payload kg"),
             ("csv_path", "Trajectory CSV"),
             ("minimum_duration_s", "Min duration s"),
+            ("servo_mode", "Servo mode"),
+            ("aheadtime", "Lookahead"),
+            ("gain", "Gain"),
+            ("servo_time_s", "Servo period s"),
         ):
             if key in case and case[key] is not None:
                 parts.append(f"{label}={case[key]}")
