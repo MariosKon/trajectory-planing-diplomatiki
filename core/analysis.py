@@ -29,9 +29,32 @@ def analyze_trial(folder):
     feedback = rows(folder/"feedback.csv")
     rigol = rows(folder/"rigol_scope.csv")
     events = rows(folder/"events.csv")
+    # IMPORTANT: logger activity can continue while VISA downloads
+    # megabytes of waveform data. Time-filter all motion metrics.
+    event_times = {}
+    for event_row in events:
+        timestamp = number(event_row.get("host_time_s"))
+        if timestamp is not None:
+            event_times[event_row.get("event")] = timestamp
+
+    motion_start = event_times.get("MOTION_START")
+    motion_end = event_times.get("MOTION_END")
+    valid_window = (
+        motion_start is not None and motion_end is not None
+        and motion_end > motion_start
+    )
+    motion_feedback = [
+        sample for sample in feedback
+        if valid_window
+        and (timestamp := number(sample.get("host_time_s"))) is not None
+        and motion_start <= timestamp <= motion_end
+    ]
     metrics = {
         "robot_samples": len(feedback),
+        "robot_motion_samples": len(motion_feedback),
+        "robot_motion_window_valid": bool(valid_window and motion_feedback),
         "rigol_samples": len(rigol),
+        "motion_duration_s": motion_end - motion_start if valid_window else None,
     }
 
     for prefix, axes, name in (
@@ -41,7 +64,7 @@ def analyze_trial(folder):
         errors = []
         target_prefix = prefix + "Target"
         actual_prefix = prefix + "Actual"
-        for row in feedback:
+        for row in motion_feedback:
             components = []
             for axis in axes:
                 target = number(row.get(f"{target_prefix}[{axis}]"))
@@ -69,18 +92,6 @@ def analyze_trial(folder):
             if all(x is not None for x in values):
                 peaks.append(math.sqrt(sum(x*x for x in values)))
         metrics[name] = max(peaks) if peaks else None
-
-    event_times = {}
-    for row in events:
-        t = number(row.get("host_time_s"))
-        if t is not None:
-            event_times[row.get("event")] = t
-    if "MOTION_START" in event_times and "MOTION_END" in event_times:
-        metrics["motion_duration_s"] = (
-            event_times["MOTION_END"] - event_times["MOTION_START"]
-        )
-    else:
-        metrics["motion_duration_s"] = None
 
     scope_samples = []
     for row in rigol:
