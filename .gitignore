@@ -1,1 +1,8 @@
 results/
+_pycache__/
+tests/_pycache__/
+TCP-IP-Python-V4/dobot_sdk/__pycache__/
+core/__pycache__/
+examples/__pycache__/
+logger/__pycache__/
+TCP-IP-Python-V4/dobot_sdk/core/__pycache__/
