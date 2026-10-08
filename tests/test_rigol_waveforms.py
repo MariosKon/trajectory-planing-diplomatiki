@@ -26,6 +26,19 @@ class RigolTests(unittest.TestCase):
             self.assertTrue(np.allclose(p, [3., 3., 3.]))
             self.assertFalse(np.allclose(p, c * v))
 
+    def test_roll_mode_rejected_before_run(self):
+        with TemporaryDirectory() as root:
+            logger = self.make_logger(root)
+            scope = MagicMock()
+            scope.query.side_effect = lambda cmd: "ROLL" if cmd == ":TIM:MODE?" else "1"
+            rm = MagicMock()
+            rm.open_resource.return_value = scope
+            with patch("loggers.rigol_logger.pyvisa") as visa:
+                visa.ResourceManager.return_value = rm
+                with self.assertRaises(RuntimeError):
+                    logger.start()
+            self.assertNotIn(":RUN", [x.args[0] for x in scope.write.call_args_list])
+
     def test_current_without_calibration_is_unverified(self):
         self.assertIsNone(RigolScopeLogger._current_factor("V", None))
         self.assertEqual(RigolScopeLogger._current_factor("A", None), 1.0)
@@ -38,6 +51,8 @@ class RigolTests(unittest.TestCase):
             scope.query.side_effect = lambda command: {
                 "*IDN?": "RIGOL,MOCK,123,1",
                 "*OPC?": "1",
+                ":TIM:MODE?": "MAIN",
+                ":ACQ:MDEP?": "60000",
             }.get(command, "1")
             rm = MagicMock()
             rm.open_resource.return_value = scope
@@ -45,6 +60,7 @@ class RigolTests(unittest.TestCase):
                 visa.ResourceManager.return_value = rm
                 logger.start()
             cmds = [x.args[0] for x in scope.write.call_args_list]
+            self.assertLess(cmds.index(":TIM:MODE MAIN"), cmds.index(":RUN"))
             self.assertLess(cmds.index(":TIM:SCAL 5.0"), cmds.index(":RUN"))
             self.assertLess(cmds.index(":ACQ:MDEP 60000"), cmds.index(":RUN"))
             logger.close()
