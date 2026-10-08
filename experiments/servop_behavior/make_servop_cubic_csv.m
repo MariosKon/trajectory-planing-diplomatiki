@@ -9,8 +9,7 @@ clear; clc;
 Ts = 0.030;
 poseStart = [-600, -400, 250, -90, 0, 90];
 poseEnd   = [-600,  400, 250, -90, 0, 90];
-vMax_mm_s = 600;
-aMax_mm_s2 = 2000;
+T = 2.0;                 % requested duration [s]
 makePlot = true;
 outputCsv = fullfile(fileparts(mfilename('fullpath')), 'points_servop_cubic.csv');
 
@@ -24,14 +23,13 @@ end
 if any(delta(4:6) ~= 0)
     error('This experiment requires constant tool orientation.');
 end
-if Ts <= 0 || vMax_mm_s <= 0 || aMax_mm_s2 <= 0
-    error('Ts, vMax, and aMax must all be positive.');
+if ~isfinite(T) || Ts <= 0 || T <= 0
+    error('T and Ts must both be positive.');
 end
 
 % s(u) = 3*u^2 - 2*u^3,  u=t/T
 % max(ds/dt) = 1.5/T, max(abs(d2s/dt2)) = 6/T^2
-Tmin = max(1.5*D/vMax_mm_s, sqrt(6*D/aMax_mm_s2));
-nIntervals = max(1, ceil(Tmin/Ts - 1e-12));
+nIntervals = max(2, ceil(T/Ts - 1e-12));
 Tfinal = nIntervals*Ts;
 t = (0:nIntervals).'*Ts;
 u = t/Tfinal;
@@ -48,7 +46,10 @@ tab = table(mode, Q(:,1), Q(:,2), Q(:,3), Q(:,4), Q(:,5), Q(:,6), ...
     'VariableNames', {'mode','x1','x2','x3','x4','x5','x6'});
 writetable(tab, outputCsv);
 
-fprintf('CSV: %s\n', outputCsv);
+if ~isfile(outputCsv)
+    error('CSV missing after writing: %s', outputCsv);
+end
+fprintf('CSV VERIFIED: %s\n', outputCsv);
 fprintf('Cartesian distance: %.1f mm\n', D);
 fprintf('Samples: %d | sample period: %.3f s | duration: %.3f s\n', ...
     numel(t), Ts, Tfinal);
