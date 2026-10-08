@@ -16,7 +16,11 @@ def load_points(path):
 
 
 def configure_motion_speed(robot, case):
-    """Apply the per-case speed setting before a motion command."""
+    """Apply explicit case-wide speed factor, or MoveL/MoveJ convention."""
+    if "global_speed_factor" in case:
+        response = robot.robot_control.SpeedFactor(case["global_speed_factor"])
+        check_response(response)
+        return response
     if case.get("mode") in ("movel", "movej"):
         # Case speed is already supplied as MovL/MovJ v=... below.
         # Do not apply it a second time as a global scale.
@@ -73,8 +77,23 @@ def execute_motion(robot, cfg, case, manager, run_dir):
     else:
         raise ValueError(f"Unknown motion mode: {mode}")
 
+    if mode == "csv":
+        aheadtime = float(case.get("aheadtime", cfg.aheadtime))
+        gain = float(case.get("gain", cfg.gain))
+        if not 20.0 <= aheadtime <= 100.0:
+            raise ValueError("Servo aheadtime must be in [20, 100]")
+        if not 200.0 <= gain <= 1000.0:
+            raise ValueError("Servo gain must be in [200, 1000]")
+        manager.event(
+            "MOTION_PARAMETERS",
+            f"servo_t_s={period};aheadtime={aheadtime};gain={gain}",
+        )
+    else:
+        aheadtime = cfg.aheadtime
+        gain = cfg.gain
+
     fields = [
-        "sample", "host_time_s", "mode", "lateness_ms",
+        "sample", "host_time_s", "mode", "servo_t_s", "aheadtime", "gain", "lateness_ms",
         "command_duration_ms", "planner_time_s",
         "planner_calculation_us", "finished",
     ] + [f"position_{i}" for i in range(1,7)]
@@ -116,11 +135,11 @@ def execute_motion(robot, cfg, case, manager, run_dir):
 
             if command_mode == "ServoJ":
                 response = robot.motion.ServoJ(
-                    values, period, cfg.aheadtime, cfg.gain
+                    values, period, aheadtime, gain
                 )
             elif command_mode == "ServoP":
                 response = robot.motion.ServoP(
-                    values, period, cfg.aheadtime, cfg.gain
+                    values, period, aheadtime, gain
                 )
             else:
                 raise ValueError(f"Unsupported mode: {command_mode}")
@@ -133,6 +152,9 @@ def execute_motion(robot, cfg, case, manager, run_dir):
                 "sample": count+1,
                 "host_time_s": time.perf_counter()-manager.robot.t0,
                 "mode": command_mode,
+                "servo_t_s": period,
+                "aheadtime": aheadtime,
+                "gain": gain,
                 "lateness_ms": max(0.0, -remaining)*1000,
                 "command_duration_ms": duration*1000,
                 "planner_time_s": planner_time,
@@ -218,7 +240,7 @@ def run_trial(cfg, case, run_dir, robot=None):
         if speed_response is not None:
             print(
                 f"[ROBOT] Global speed factor set to "
-                "100% (case speed applied to motion command)", flush=True
+                "100% (explicit case settings)", flush=True
             )
         print("[LOGGING] Starting robot, Rigol and camera loggers", flush=True)
         manager.start()
@@ -339,6 +361,9 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
             ("payload_kg", "Payload kg"),
             ("csv_path", "Trajectory CSV"),
             ("minimum_duration_s", "Min duration s"),
+            ("aheadtime", "Aheadtime"),
+            ("gain", "Gain"),
+            ("global_speed_factor", "Global speed %"),
         ):
             if key in case and case[key] is not None:
                 parts.append(f"{label}={case[key]}")
@@ -420,6 +445,9 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
                     "global_trial": global_index,
                     "status": "planned",
                 }
+                for key in ("aheadtime", "gain", "global_speed_factor"):
+                    if key in case:
+                        record[key] = case[key]
 
                 if execute:
                     try:
