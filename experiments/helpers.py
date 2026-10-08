@@ -2,6 +2,10 @@ from itertools import product
 from pathlib import Path
 
 def cases_for(name, cfg, csv_path=None):
+    if name in ("servoj_params", "servop_params"):
+        from experiments.servo_parameter_study import servo_parameter_cases
+        return servo_parameter_cases(name, cfg, csv_path)
+
     if name in ("cubic", "quintic", "trapezoidal", "double_s", "csv_servo"):
         filename = csv_path or (
             Path(__file__).parent/name/f"points_{name}.csv"
