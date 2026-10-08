@@ -51,8 +51,21 @@ class LoggingManager:
             self.rigol.start(self.robot.t0)
             self.rigol_started = True
             self.event("RIGOL_STARTED")
-            if self.cfg.rigol_pre_delay_s:
-                time.sleep(self.cfg.rigol_pre_delay_s)
+            # Arm the scope before the measured command. Wait until the
+            # requested lead time has elapsed since the actual :RUN request,
+            # rather than counting delays used by USB metadata processing.
+            started = self.rigol.metadata.get("host_start_perf_s")
+            if isinstance(started, (int, float)):
+                elapsed = max(0.0, time.perf_counter() - started)
+                remaining = max(0.0, self.cfg.rigol_pre_delay_s - elapsed)
+            else:
+                remaining = self.cfg.rigol_pre_delay_s
+            if remaining > 0:
+                time.sleep(remaining)
+            if isinstance(started, (int, float)):
+                lead = time.perf_counter() - started
+                print(f"[RIGOL] Armed {lead:.3f}s before motion command", flush=True)
+                self.event("RIGOL_PREMOTION_READY", f"lead_s={lead:.6f}")
 
     def stop(self):
         """Stop feedback promptly; keep camera recording through Rigol transfer.
