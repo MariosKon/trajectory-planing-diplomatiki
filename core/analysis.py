@@ -84,7 +84,7 @@ def analyze_trial(folder):
     ):
         peaks = []
         axis_count = 6 if prefix == "QDActual" else 3
-        for row in feedback:
+        for row in motion_feedback:
             values = [
                 number(row.get(f"{prefix}[{i}]"))
                 for i in range(1, axis_count+1)
