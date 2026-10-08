@@ -35,14 +35,14 @@ class ConfigureMotionSpeedTests(unittest.TestCase):
 
         self.assertEqual(control.speed_factors, [])
 
-    def test_default_acquisition_delays_are_disabled(self):
+    def test_default_acquisition_delays_match_configuration(self):
         cfg = Config()
 
-        self.assertEqual(cfg.settle_s, 0.0)
-        self.assertEqual(cfg.camera_pre_delay_s, 0.0)
-        self.assertEqual(cfg.camera_stop_delay_s, 0.0)
-        self.assertEqual(cfg.rigol_pre_delay_s, 0.0)
-        self.assertEqual(cfg.rigol_stop_delay_s, 0.0)
+        self.assertEqual(cfg.settle_s, 3.0)
+        self.assertEqual(cfg.camera_pre_delay_s, 2.0)
+        self.assertEqual(cfg.camera_stop_delay_s, 2.0)
+        self.assertEqual(cfg.rigol_pre_delay_s, 2.0)
+        self.assertEqual(cfg.rigol_stop_delay_s, 1.0)
 
     def test_slow_move_does_not_add_a_fixed_settle_delay(self):
         robot = type("Robot", (), {
