@@ -1,4 +1,0 @@
-host_time_s,host_utc,event,details
-9.724465100000089,2026-10-08T12:33:57.783137+00:00,ROBOT_LOGGER_STARTED,
-9.725650899999891,2026-10-08T12:33:57.784053+00:00,MOTION_START,"{'name': 'movel', 'mode': 'movel', 'start': [-600, -400, 250, -90, 0, 90], 'target': [-600, 400, 250, -90, 0, 90], 'speed': 50, 'acceleration': 50}"
-13.645395700001245,2026-10-08T12:34:01.704514+00:00,MOTION_END,

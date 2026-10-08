@@ -1,2 +1,0 @@
-case,error,global_trial,joint_tracking_rmse,joint_tracking_rmse_max,joint_velocity_max,mean_power_W,motion_duration_s,peak_power_W,rigol_acquisition_energy_J,rigol_samples,robot_samples,status,tcp_position_tracking_rmse_mm,tcp_position_tracking_rmse_mm_max,tcp_speed_max,trial
-1,KeyboardInterrupt(),1,0.0009513004249357604,0.0057526848980056925,0.12220806565561243,,,,,0,3682,failed,0.00520913876272748,0.016073821620276544,1.5598374187005646,1
