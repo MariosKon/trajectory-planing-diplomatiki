@@ -49,7 +49,7 @@
   "camera_stop_delay_s": 0,
   "rigol_pre_delay_s": 1,
   "rigol_stop_delay_s": 0,
-  "rigol_horizontal_scale_s_per_div": 5,
+  "rigol_horizontal_scale_s_per_div": 0.5,
   "rigol_memory_depth": 60000,
   "rigol_preview_points": 2000,
   "rigol_current_A_per_unit": null,
