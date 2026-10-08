@@ -19,13 +19,13 @@ class RecordingRobotControl:
 
 
 class ConfigureMotionSpeedTests(unittest.TestCase):
-    def test_movel_case_applies_case_speed_to_global_speed_factor(self):
+    def test_movel_case_keeps_global_speed_at_100(self):
         control = RecordingRobotControl()
         robot = type("Robot", (), {"robot_control": control})()
 
         configure_motion_speed(robot, {"mode": "movel", "speed": 75})
 
-        self.assertEqual(control.speed_factors, [75])
+        self.assertEqual(control.speed_factors, [100])
 
     def test_non_movel_cases_do_not_change_global_speed(self):
         control = RecordingRobotControl()
