@@ -22,6 +22,7 @@ class LoggingManager:
                 horizontal_scale_s_per_div=cfg.rigol_horizontal_scale_s_per_div,
                 download_points=cfg.rigol_memory_depth,
                 max_output_points=cfg.rigol_preview_points,
+                download_raw=cfg.rigol_download_raw,
                 current_A_per_unit=cfg.rigol_current_A_per_unit,
                 voltage_V_per_unit=cfg.rigol_voltage_V_per_unit,
             )
@@ -54,26 +55,25 @@ class LoggingManager:
                 time.sleep(self.cfg.rigol_pre_delay_s)
 
     def stop(self):
+        """Stop feedback promptly; keep camera recording through Rigol transfer.
+
+        Errors from one device must not prevent finalizing the other devices.
+        """
         result = {}
 
-        if self.camera is not None and self.camera_started:
-            try:
-                if self.cfg.camera_stop_delay_s:
-                    time.sleep(self.cfg.camera_stop_delay_s)
-                result["camera"] = self.camera.stop()
-            except Exception as exc:
-                result["camera_error"] = repr(exc)
-            self.camera_started = False
-
-        # Save only useful robot feedback, not the potentially long
-        # USB waveform transfer that follows. MOTION_END was logged by runner.
+        # End robot feedback shortly after MOTION_END. Its timestamps are
+        # already stored in events.csv; prolonged VISA transfer is not motion.
         if self.robot_started:
             try:
                 result["robot"] = self.robot.stop()
             except Exception as exc:
                 result["robot_error"] = repr(exc)
-            self.robot_started = False
+            finally:
+                self.robot_started = False
 
+        # Save oscilloscope data BEFORE ending camera recording. The camera
+        # therefore continues recording fluid settling throughout the
+        # acquisition remainder and data transfer.
         if self.rigol is not None:
             try:
                 if self.rigol_started:
@@ -84,6 +84,19 @@ class LoggingManager:
                     self.rigol.close()
             except Exception as exc:
                 result["rigol_error"] = repr(exc)
-            self.rigol_started = False
+            finally:
+                self.rigol_started = False
+
+        # This delay is deliberately applied AFTER Rigol.stop() returns.
+        # It captures an additional tail even when display transfer is fast.
+        if self.camera is not None and self.camera_started:
+            try:
+                if self.cfg.camera_stop_delay_s:
+                    time.sleep(self.cfg.camera_stop_delay_s)
+                result["camera"] = self.camera.stop()
+            except Exception as exc:
+                result["camera_error"] = repr(exc)
+            finally:
+                self.camera_started = False
 
         return result
