@@ -89,4 +89,17 @@ python main.py --experiment servop_behavior --case 1 --repetitions 1
 python main.py --experiment servop_behavior --case 1 --repetitions 1 --execute
 ```
 
-ServoJ is deliberately not configured here: a ServoJ CSV must contain joint angles, not the MoveL Cartesian coordinates.
+ServoJ has its own joint-space cubic experiment; it must not reuse the Cartesian ServoP reference.
+
+## ServoJ behavior experiment (cubic joint-space reference)
+
+Use [ServoJ experiment folder](experiments/servoj_behavior/README.md) for
+the exact specified six-joint endpoints, MATLAB generator, committed 30 ms
+reference CSV, safety checks and nine tracking-parameter cases.
+
+```powershell
+python main.py --experiment servoj_behavior --list-cases
+python main.py --experiment servoj_behavior --case 1 --repetitions 1
+# Real movement ONLY after supervised checks:
+python main.py --experiment servoj_behavior --case 1 --repetitions 1 --execute
+```
