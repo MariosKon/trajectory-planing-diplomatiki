@@ -34,7 +34,8 @@ def main():
         "--experiment", required=True,
         choices=[
             "movel","movej","cubic","quintic","trapezoidal",
-            "double_s","csv_servo","ruckig","payload"
+            "double_s","csv_servo","ruckig","payload",
+            "servoj_params","servop_params"
         ],
     )
     parser.add_argument("--repetitions", type=int, default=3)
