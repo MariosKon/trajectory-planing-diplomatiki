@@ -27,7 +27,7 @@ class Config:
     rigol_resource: str | None = None
     rigol_current_channel: str = "CHAN1"
     rigol_voltage_channel: str = "CHAN2"
-    rigol_horizontal_scale_s_per_div: float | None = 5.0
+    rigol_horizontal_scale_s_per_div: float | None = 0.5
     rigol_memory_depth: int = 60000
     rigol_preview_points: int = 2000
     rigol_current_A_per_unit: float | None = None
