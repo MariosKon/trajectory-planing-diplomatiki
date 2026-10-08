@@ -279,14 +279,35 @@ def run_trial(cfg, case, run_dir, robot=None):
     finally:
         print("[LOGGING] Stopping acquisition and saving data", flush=True)
         result["logging"] = manager.stop()
-        if "rigol_error" in result["logging"] or "robot_error" in result["logging"]:
-            result["status"] = "failed"
-            success = False
+        # Recorder failures mean lost measurements, not failed robot motion.
+        # Keep the trial and proceed to the next case after safe homing.
+        data_errors = {}
+        for key in ("rigol_error", "camera_error"):
+            if result["logging"].get(key):
+                data_errors[key] = result["logging"][key]
         for key in ("rigol", "camera"):
             report = result["logging"].get(key, {})
             if isinstance(report, dict) and report.get("error"):
-                result["status"] = "failed"
-                success = False
+                data_errors[key] = report["error"]
+        if data_errors and success:
+            result["status"] = "partial"
+            result["data_errors"] = data_errors
+            print(f"[DATA WARNING] Partial recording: {data_errors}", flush=True)
+
+        # A robot-feedback failure or observed fault/collision is not
+        # recoverable data loss: stop the remaining physical movements.
+        safety_errors = {}
+        if result["logging"].get("robot_error"):
+            safety_errors["robot_error"] = result["logging"]["robot_error"]
+        feedback_stats = result["logging"].get("robot", {})
+        if isinstance(feedback_stats, dict):
+            for key in ("error_samples", "collision_samples"):
+                if feedback_stats.get(key, 0):
+                    safety_errors[key] = feedback_stats[key]
+        if safety_errors:
+            result["status"] = "failed"
+            result["safety_errors"] = safety_errors
+            success = False
 
         # Never attempt automatic recovery motion after a failed trial.
         if connected and success:
@@ -335,6 +356,7 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
     total_cases = len(cases)
     total_trials = total_cases * repetitions
     completed = 0
+    partial = 0
     failed = 0
     attempted = 0
     all_trials = []
@@ -455,7 +477,7 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
                         result = run_trial(cfg, case, folder, robot=robot)
                         record["status"] = result["status"]
 
-                        if record["status"] != "completed":
+                        if record["status"] not in ("completed", "partial"):
                             abort = True
 
                     except BaseException as exc:
@@ -473,14 +495,19 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
                             log("    [ANALYSIS] Metrics saved")
                         except Exception as exc:
                             record["analysis_error"] = repr(exc)
-                            record["status"] = "failed"
-                            abort = True
+                            if record["status"] in ("completed", "partial") and not abort:
+                                record["status"] = "partial"
+                            else:
+                                record["status"] = "failed"
+                                abort = True
                             log(f"    [ANALYSIS ERROR] {exc!r}")
 
                 attempted += 1
 
                 if record["status"] == "completed":
                     completed += 1
+                elif record["status"] == "partial":
+                    partial += 1
                 elif record["status"] == "failed":
                     failed += 1
 
@@ -495,7 +522,7 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
                 log(f"    STATUS: {record['status'].upper()}")
                 log(f"    Trial duration: {format_time(elapsed_trial)}")
                 log(f"    Progress: {attempted}/{total_trials} ({percent:.1f}%)")
-                log(f"    Completed: {completed} | Failed: {failed}")
+                log(f"    Completed: {completed} | Partial: {partial} | Failed: {failed}")
                 log(f"    Remaining: {remaining}")
 
                 if attempted > 0 and not abort:
@@ -533,6 +560,7 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
     log("=" * 66)
     log(f"EXPERIMENT FINISHED: {experiment.upper()}")
     log(f"Completed: {completed}/{total_trials}")
+    log(f"Partial recordings: {partial}")
     log(f"Failed: {failed}")
     log(f"Not attempted: {total_trials - attempted}")
     log(f"Total elapsed: {format_time(time.perf_counter() - batch_start)}")
