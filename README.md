@@ -122,3 +122,24 @@ The `--case` option is 1-based and rejects an invalid index. If omitted, all cas
 ## October 8 Rigol ROLL-mode diagnosis
 
 The observed DS1202Z-E recording had a 5 s/div ROLL display but exported only ~3.21 seconds of data at scope time -30 to -26.79 seconds. These are not equivalent to the current display; old acquisition energy results must not be used. The logger now explicitly requires `:TIM:MODE MAIN`, checks `:TRIG:STAT?` reports STOP, and waits at least one configured 12-division screen span (default 0.5 s/div = 6 s) from the RUN command before stopping. This is a deliberately conservative diagnostic capture and is not precise hardware synchronization with the robot. Inspect `rigol_screen.png`, `rigol_metadata.json`, and both channel CSVs and validate behavior with a supervised single run. `rigol_horizontal_scale_s_per_div` can be adjusted to suit longer motion; do not automatically use 5 s/div for short moves because it gives a 60-second window. Instrument readback `:ACQ:MDEP?` returning `AUTO` is a warning, not proof of the requested fixed record length.
+
+## Rigol display-vs-RAW polarity (October 8 follow-up)
+
+A supervised MAIN-mode acquisition covered the complete 6-second window, but
+the Rigol CH1 NORM display trace had a positive current peak (~1.58 A)
+while the RAW BYTE preamble conversion yielded a negative peak (~-1.61 A).
+The old RAW-derived report (-100.76 J acquisition energy) is invalid.
+The 1200-point display trace (with CH2 voltage near 47.7 V) gives an
+approximate +67.14 J **full-acquisition signed energy** and +74.58 W peak;
+this is diagnostic, not motion-only energy or verified absolute calibration.
+
+Until RAW scaling is resolved against the actual instrument, `rigol_scope.csv`
+and `core/analysis.py` use the instrument's NORM display traces for I and V
+to avoid the observed sign reversal. Raw channel CSVs and preambles remain
+available for investigation. Metadata includes `power_trace_source`,
+`raw_display_comparison`, and `movement_only_energy_valid=false`. This
+reduces the reported time resolution to the display's 1200 points; do not
+compare short high-frequency transients or calculate motion-only energy
+without hardware trigger synchronization. Do not silently reverse the sign
+of RAW samples as a workaround. Validate current-probe polarity and ratio
+with an independently known load before interpreting electrical energy.
