@@ -39,6 +39,42 @@ class RigolTests(unittest.TestCase):
                     logger.start()
             self.assertNotIn(":RUN", [x.args[0] for x in scope.write.call_args_list])
 
+    def test_scope_display_current_is_used_when_raw_has_wrong_polarity(self):
+        with TemporaryDirectory() as root:
+            logger = self.make_logger(root, horizontal_scale_s_per_div=None)
+            logger.metadata["host_start_perf_s"] = 100.0
+            logger.metadata["channels"]["CHAN1"]["unit"] = "AMP"
+            logger.scope = MagicMock()
+            logger.scope.query.side_effect = lambda cmd: (
+                "MAIN" if cmd == ":TIM:MODE?" else "STOP"
+                if cmd == ":TRIG:STAT?" else "1"
+            )
+            t = np.linspace(-1.0, 1.0, 101)
+            displayed_current = 0.2 + np.exp(-((t + 0.3) / 0.2) ** 2)
+            displayed_voltage = np.full_like(t, 48.0)
+            def read_display(channel):
+                return (t, displayed_current) if channel == "CHAN1" else (t, displayed_voltage)
+            def read_raw(channel):
+                return (t, -displayed_current) if channel == "CHAN1" else (t, displayed_voltage)
+            logger._download_display_waveform = read_display
+            logger._download_waveform = read_raw
+            logger._save_channel = lambda *args: None
+            logger._capture_screen_image = lambda: None
+            logger._confirm_stopped = lambda: None
+            with patch("loggers.rigol_logger.time.perf_counter", return_value=102.0):
+                result = logger.stop()
+            self.assertIsNone(result["error"])
+            self.assertEqual(result["power_trace_source"], "NORM_DISPLAY")
+            self.assertTrue(result["power_data_valid"])
+            self.assertLess(
+                logger.metadata["raw_display_comparison"]["CHAN1"]["correlation"], -0.99
+            )
+            from pathlib import Path
+            import csv
+            with (Path(root) / "rigol_scope.csv").open(newline="") as fh:
+                points = list(csv.DictReader(fh))
+            self.assertGreater(max(float(row["power_W"]) for row in points), 50.0)
+
     def test_current_without_calibration_is_unverified(self):
         self.assertIsNone(RigolScopeLogger._current_factor("V", None))
         self.assertEqual(RigolScopeLogger._current_factor("A", None), 1.0)
