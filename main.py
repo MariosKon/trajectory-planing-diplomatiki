@@ -11,6 +11,18 @@ from core.config import Config
 from core.runner import batch
 from experiments.helpers import cases_for
 
+def select_cases(cases, case_number):
+    """Return the selected 1-based experiment case, or all cases."""
+    if case_number is None:
+        return cases
+    if not 1 <= case_number <= len(cases):
+        raise ValueError(
+            f"--case must be between 1 and {len(cases)} "
+            f"(received {case_number})"
+        )
+    return [cases[case_number - 1]]
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -21,6 +33,10 @@ def main():
         ],
     )
     parser.add_argument("--repetitions", type=int, default=3)
+    parser.add_argument("--case", type=int, default=None,
+                        help="Run only one 1-based parameter combination (e.g. --case 1)")
+    parser.add_argument("--list-cases", action="store_true",
+                        help="Print available case numbers and parameters; no motion")
     parser.add_argument("--csv", default=None)
     parser.add_argument("--config", default="config/common.json")
     parser.add_argument(
@@ -31,7 +47,17 @@ def main():
     if args.repetitions < 1:
         parser.error("Repetitions must be >= 1")
     cfg = Config.load(ROOT/args.config)
-    cases = cases_for(args.experiment, cfg, args.csv)
+    all_cases = cases_for(args.experiment, cfg, args.csv)
+    if args.list_cases:
+        for index, case in enumerate(all_cases, 1):
+            print(f"Case {index}/{len(all_cases)}: {case}")
+        return
+    try:
+        cases = select_cases(all_cases, args.case)
+    except ValueError as exc:
+        parser.error(str(exc))
+    if args.case is not None:
+        print(f"Selected case {args.case}/{len(all_cases)}: {cases[0]}")
     if args.execute:
         print("WARNING: REAL ROBOT MOTION ENABLED")
     else:
