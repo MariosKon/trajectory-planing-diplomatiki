@@ -193,6 +193,7 @@ class RigolScopeLogger:
                 writer = csv.writer(handle)
                 writer.writerow(["scope_time_s", "displayed_value"])
                 writer.writerows(zip(time_axis, displayed))
+            return time_axis, displayed
         except Exception as exc:
             self.metadata["warnings"].append(
                 f"NORM display trace failed for {channel}: {exc!r}"
@@ -313,63 +314,100 @@ class RigolScopeLogger:
             )
             self.metadata["sample_rate_after_stop"] = self._query_optional(":ACQ:SRAT?")
             self._capture_screen_image()
+            display_traces = {}
             for channel in (self.current_channel, self.voltage_channel):
-                self._download_display_waveform(channel)
+                display_traces[channel] = self._download_display_waveform(channel)
             current_t, current_raw = self._download_waveform(self.current_channel)
             voltage_t, voltage_raw = self._download_waveform(self.voltage_channel)
             self._save_channel(self.current_channel, current_t, current_raw)
             self._save_channel(self.voltage_channel, voltage_t, voltage_raw)
 
-            # Never pair samples merely by array index if the timebases differ.
-            lo = max(float(current_t[0]), float(voltage_t[0]))
-            hi = min(float(current_t[-1]), float(voltage_t[-1]))
-            mask = (current_t >= lo) & (current_t <= hi)
-            if not np.any(mask):
-                raise ValueError("Rigol channels have no overlapping time interval")
-            t = current_t[mask]
-            displayed_current = current_raw[mask]
-            displayed_voltage = np.interp(t, voltage_t, voltage_raw)
+            # The DS1202Z-E RAW channel BYTE data in actual experiments can
+            # disagree with the displayed waveform (including reversed CH1
+            # polarity). Preserve RAW/preambles for investigation, but DO NOT
+            # derive the published electrical metrics from unverified RAW.
+            display_i = display_traces.get(self.current_channel)
+            display_v = display_traces.get(self.voltage_channel)
+            if display_i is None or display_v is None:
+                raise ValueError(
+                    "Cannot validate Rigol displayed waveforms; refusing RAW-derived power"
+                )
+            di_t, di_values = display_i
+            dv_t, dv_values = display_v
+            lo = max(float(di_t[0]), float(dv_t[0]))
+            hi = min(float(di_t[-1]), float(dv_t[-1]))
+            mask = (di_t >= lo) & (di_t <= hi)
+            if np.count_nonzero(mask) < 2:
+                raise ValueError("Rigol display traces have no usable common interval")
+            t = di_t[mask]
+            displayed_current = di_values[mask]
+            displayed_voltage = np.interp(t, dv_t, dv_values)
+
+            self.metadata["raw_display_comparison"] = {}
+            for channel, raw_t, raw_values in (
+                (self.current_channel, current_t, current_raw),
+                (self.voltage_channel, voltage_t, voltage_raw),
+            ):
+                display_t, display_values = display_traces[channel]
+                overlapping = ((display_t >= raw_t[0]) &
+                               (display_t <= raw_t[-1]))
+                reference = display_values[overlapping]
+                observed = np.interp(display_t[overlapping], raw_t, raw_values)
+                comparison = {
+                    "paired_points": int(reference.size),
+                    "correlation": None,
+                    "raw_preamble_conversion_verified": False,
+                }
+                if reference.size >= 10 and np.ptp(reference) > 0.1 and np.ptp(observed) > 0.1:
+                    correlation = float(np.corrcoef(reference, observed)[0, 1])
+                    comparison["correlation"] = (
+                        correlation if np.isfinite(correlation) else None
+                    )
+                    if np.isfinite(correlation) and correlation < -0.7:
+                        self.metadata["warnings"].append(
+                            f"{channel}: RAW signal polarity disagrees with scope "
+                            "display; RAW-derived electrical metrics are disabled"
+                        )
+                self.metadata["raw_display_comparison"][channel] = comparison
 
             unit = self.metadata["channels"][self.current_channel]["unit"]
             current_factor = self._current_factor(unit, self.current_A_per_unit)
             if current_factor is None:
                 self.metadata["warnings"].append(
-                    "Current channel unit is not confirmed as A. "
-                    "Set rigol_current_A_per_unit for an external sensor."
+                    "Current channel is not confirmed in amperes; configure "
+                    "rigol_current_A_per_unit for an external sensor"
                 )
             current = (displayed_current * current_factor
                        if current_factor is not None
                        else np.full_like(displayed_current, np.nan))
             voltage = displayed_voltage * self.voltage_V_per_unit
-            # Multiply at original resolution before reducing for CSV output.
             power = current * voltage
+            self.metadata["power_trace_source"] = "NORM_DISPLAY"
             self.metadata["power_calibrated"] = current_factor is not None
-            self.metadata["waveform_overlap_duration_s"] = float(t[-1] - t[0])
+            self.metadata["movement_only_energy_valid"] = False
+            self.metadata["display_waveform_duration_s"] = float(t[-1] - t[0])
             acquired_s = self.metadata["host_acquisition_duration_s"]
-            waveform_s = self.metadata["waveform_overlap_duration_s"]
+            waveform_s = self.metadata["display_waveform_duration_s"]
             coverage = waveform_s / acquired_s if acquired_s > 0 else 0.0
             self.metadata["waveform_host_duration_ratio"] = coverage
-            # Trigger-relative time does not equal host time. Only duration
-            # coverage is checked here, NOT motion synchronization.
             self.metadata["acquisition_duration_covered"] = coverage >= 0.9
             if not self.metadata["acquisition_duration_covered"]:
                 self.metadata["warnings"].append(
-                    f"RAW waveform covers {waveform_s:.3f}s of {acquired_s:.3f}s "
+                    f"Display waveform covers {waveform_s:.3f}s of {acquired_s:.3f}s "
                     f"host acquisition ({coverage:.1%}). Power data invalid."
                 )
                 power = np.full_like(power, np.nan)
-            if not (float(t[0]) <= 0.0 <= float(t[-1])):
-                self.metadata["warnings"].append(
-                    "RAW waveform excludes oscilloscope trigger-relative time zero. "
-                    "Compare rigol_screen.png with the displayed waveform CSV."
-                )
             self.metadata["power_data_valid"] = bool(
                 self.metadata["power_calibrated"]
                 and self.metadata["acquisition_duration_covered"]
             )
+            self.metadata["warnings"].append(
+                "Power and energy use 1200-point NORM display data; "
+                "not motion-only energy. RAW scaling remains unverified."
+            )
             self.sample = int(t.size)
             if self.sample < 2:
-                raise ValueError("Insufficient samples in common waveform window")
+                raise ValueError("Insufficient samples in display waveform window")
             t, current, voltage, power = self._downsample(t, current, voltage, power)
             with (self.run_dir / "rigol_scope.csv").open(
                 "w", newline="", encoding="utf-8"
@@ -391,6 +429,7 @@ class RigolScopeLogger:
                     else None
                 ),
                 "warnings": self.metadata["warnings"],
+                "power_trace_source": self.metadata["power_trace_source"],
                 "power_calibrated": self.metadata["power_calibrated"],
                 "power_data_valid": self.metadata["power_data_valid"],
             }
