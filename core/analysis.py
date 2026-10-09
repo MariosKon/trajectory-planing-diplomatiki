@@ -56,6 +56,24 @@ def analyze_trial(folder):
         "rigol_samples": len(rigol),
         "motion_duration_s": motion_end - motion_start if valid_window else None,
     }
+    # ServoP command timing and robot-idle polling are not the same as
+    # physical 1-99%% Cartesian TCP travel time.
+    first_sent = event_times.get("SERVO_FIRST_COMMAND_SENT")
+    last_sent = event_times.get("SERVO_LAST_COMMAND_SENT")
+    stream_done = event_times.get("SERVO_STREAM_PERIOD_END")
+    idle_confirmed = event_times.get("SERVO_ROBOT_IDLE")
+    metrics["command_stream_first_to_last_s"] = (
+        last_sent-first_sent if first_sent is not None
+        and last_sent is not None and last_sent >= first_sent else None
+    )
+    metrics["command_stream_period_end_from_first_s"] = (
+        stream_done-first_sent if stream_done is not None
+        and first_sent is not None and stream_done >= first_sent else None
+    )
+    metrics["post_stream_idle_wait_s"] = (
+        idle_confirmed-stream_done if idle_confirmed is not None
+        and stream_done is not None and idle_confirmed >= stream_done else None
+    )
 
     for prefix, axes, name in (
         ("Q", range(1, 7), "joint_tracking_rmse"),
@@ -92,6 +110,47 @@ def analyze_trial(folder):
             if all(x is not None for x in values):
                 peaks.append(math.sqrt(sum(x*x for x in values)))
         metrics[name] = max(peaks) if peaks else None
+
+    # Measure robot TCP 1-99% of translation, not the command/idle window.
+    # MoveL endpoints come from case.json; CSV ServoP endpoints are the first
+    # and final command points. Joint-space ServoJ is excluded.
+    metrics["tcp_travel_1pct_99pct_s"] = None
+    command_rows = rows(folder/"commands.csv")
+    start_pose, end_pose = None, None
+    if command_rows and all(row.get("mode") == "ServoP" for row in command_rows):
+        start_pose = [number(command_rows[0].get(f"position_{i}"))
+                      for i in range(1, 4)]
+        end_pose = [number(command_rows[-1].get(f"position_{i}"))
+                    for i in range(1, 4)]
+    elif (folder/"case.json").exists():
+        try:
+            case = json.loads((folder/"case.json").read_text(encoding="utf-8"))
+            if case.get("mode") == "movel":
+                start_pose = [number(value) for value in case["start"][:3]]
+                end_pose = [number(value) for value in case["target"][:3]]
+        except (ValueError, TypeError, KeyError, IndexError):
+            pass
+    if (start_pose is not None and end_pose is not None
+            and all(x is not None for x in start_pose+end_pose)):
+        displacement = [b-a for a, b in zip(start_pose, end_pose)]
+        squared_distance = sum(v*v for v in displacement)
+        if squared_distance > 1e-12:
+            crossing_1, crossing_99 = None, None
+            for sample in motion_feedback:
+                xyz = [number(sample.get(f"ToolVectorActual[{i}]"))
+                       for i in range(1, 4)]
+                sample_time = number(sample.get("host_time_s"))
+                if sample_time is None or any(value is None for value in xyz):
+                    continue
+                progress = sum((x-a)*d for x, a, d in
+                               zip(xyz, start_pose, displacement)) / squared_distance
+                if crossing_1 is None and progress >= 0.01:
+                    crossing_1 = sample_time
+                if crossing_99 is None and progress >= 0.99:
+                    crossing_99 = sample_time
+            if (crossing_1 is not None and crossing_99 is not None
+                    and crossing_99 >= crossing_1):
+                metrics["tcp_travel_1pct_99pct_s"] = crossing_99 - crossing_1
 
     scope_samples = []
     for row in rigol:
@@ -159,7 +218,8 @@ def aggregate(trials, destination):
     result = {
         "trials": len(output),
         "completed": sum(r.get("status") == "completed" for r in output),
-        "failed": sum(r.get("status") != "completed" for r in output),
+        "partial": sum(r.get("status") == "partial" for r in output),
+        "failed": sum(r.get("status") == "failed" for r in output),
         "metrics": summary,
     }
     (destination.parent/"experiment_summary.json").write_text(
