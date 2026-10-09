@@ -1,0 +1,16 @@
+{
+  "robot_samples": 600,
+  "robot_motion_samples": 413,
+  "robot_motion_window_valid": true,
+  "rigol_samples": 1200,
+  "motion_duration_s": 3.3882143999944674,
+  "joint_tracking_rmse": 1.961535620475096,
+  "joint_tracking_rmse_max": 3.460198292086753,
+  "tcp_position_tracking_rmse_mm": 10.827520237774511,
+  "tcp_position_tracking_rmse_mm_max": 20.073538928945954,
+  "joint_velocity_max": 107.1920917458414,
+  "tcp_speed_max": 643.5211513081975,
+  "mean_power_W": 11.666393333333334,
+  "peak_power_W": 73.94400000000002,
+  "rigol_acquisition_energy_J": 69.98416999999972
+}

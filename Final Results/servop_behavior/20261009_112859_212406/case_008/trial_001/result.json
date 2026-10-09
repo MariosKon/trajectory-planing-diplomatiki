@@ -1,0 +1,65 @@
+{
+  "status": "partial",
+  "case": {
+    "name": "servop_behavior",
+    "mode": "csv",
+    "csv_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\servop_behavior\\points_servop_cubic.csv",
+    "aheadtime": 80.0,
+    "gain": 300.0,
+    "global_speed_factor": 100
+  },
+  "motion": {
+    "command_count": 68,
+    "late_commands": 1,
+    "maximum_lateness_ms": 4.579400003422052,
+    "mean_command_duration_ms": 7.542735294812112,
+    "elapsed_s": 4.3132048999978
+  },
+  "logging": {
+    "robot": {
+      "received_packets": 713,
+      "invalid_packets": 0,
+      "dropped_rows": 0,
+      "error_samples": 0,
+      "collision_samples": 0
+    },
+    "rigol": {
+      "resource": "USB0::0x1AB1::0x0517::DS1ZE264511439::INSTR",
+      "samples": 1200,
+      "error": "Rigol waveform duration shorter than acquisition duration",
+      "warnings": [
+        "Display waveform covers 5.995s of 6.948s host acquisition (86.3%). Power data invalid.",
+        "Power and energy use NORM display data; not motion-only energy. RAW scaling remains unverified."
+      ],
+      "power_trace_source": "NORM_DISPLAY",
+      "power_calibrated": true,
+      "power_data_valid": false
+    },
+    "camera": {
+      "path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\servop_behavior\\20261009_112859_212406\\case_008\\trial_001\\camera.mkv",
+      "format": "matroska",
+      "codec": "copy",
+      "rtsp_transport": "tcp",
+      "timestamp_mode": "host_wallclock_on_packet_arrival",
+      "startup_confirmed_by": "ffmpeg_frame_progress",
+      "ffmpeg_log": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\servop_behavior\\20261009_112859_212406\\case_008\\trial_001\\ffmpeg_camera.log",
+      "ffmpeg_progress": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\servop_behavior\\20261009_112859_212406\\case_008\\trial_001\\ffmpeg_camera_progress.txt",
+      "frame_count": 386,
+      "received_frames": null,
+      "encoded_fps": null,
+      "file_size_bytes": 4043879,
+      "host_start_perf_s": 89145.7201973,
+      "host_end_perf_s": 89159.8550687,
+      "host_start_utc": "2026-10-09T08:40:50.044921+00:00",
+      "host_end_utc": "2026-10-09T08:41:04.179488+00:00",
+      "startup_elapsed_s": 2.9751265999948373,
+      "recorded_wall_duration_s": 14.134871399990516,
+      "note": "Packet arrival-time timestamps are not camera capture timestamps and are not synchronized to robot motion. With reordered B-frames wallclock timestamps may be unsuitable; check the FFmpeg log and inspect actual playback.",
+      "error": null
+    }
+  },
+  "data_errors": {
+    "rigol": "Rigol waveform duration shorter than acquisition duration"
+  },
+  "error_ids": "0,{[]},GetErrorID();"
+}

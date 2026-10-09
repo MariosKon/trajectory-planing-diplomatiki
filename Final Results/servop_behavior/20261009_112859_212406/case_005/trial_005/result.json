@@ -1,0 +1,61 @@
+{
+  "status": "completed",
+  "case": {
+    "name": "servop_behavior",
+    "mode": "csv",
+    "csv_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\servop_behavior\\points_servop_cubic.csv",
+    "aheadtime": 50.0,
+    "gain": 300.0,
+    "global_speed_factor": 100
+  },
+  "motion": {
+    "command_count": 68,
+    "late_commands": 0,
+    "maximum_lateness_ms": 0.0,
+    "mean_command_duration_ms": 7.569675001029871,
+    "elapsed_s": 3.4837976999988314
+  },
+  "logging": {
+    "robot": {
+      "received_packets": 612,
+      "invalid_packets": 0,
+      "dropped_rows": 0,
+      "error_samples": 0,
+      "collision_samples": 0
+    },
+    "rigol": {
+      "resource": "USB0::0x1AB1::0x0517::DS1ZE264511439::INSTR",
+      "samples": 1200,
+      "error": null,
+      "warnings": [
+        "Power and energy use NORM display data; not motion-only energy. RAW scaling remains unverified."
+      ],
+      "power_trace_source": "NORM_DISPLAY",
+      "power_calibrated": true,
+      "power_data_valid": true
+    },
+    "camera": {
+      "path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\servop_behavior\\20261009_112859_212406\\case_005\\trial_005\\camera.mkv",
+      "format": "matroska",
+      "codec": "copy",
+      "rtsp_transport": "tcp",
+      "timestamp_mode": "host_wallclock_on_packet_arrival",
+      "startup_confirmed_by": "ffmpeg_frame_progress",
+      "ffmpeg_log": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\servop_behavior\\20261009_112859_212406\\case_005\\trial_005\\ffmpeg_camera.log",
+      "ffmpeg_progress": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\servop_behavior\\20261009_112859_212406\\case_005\\trial_005\\ffmpeg_camera_progress.txt",
+      "frame_count": 386,
+      "received_frames": null,
+      "encoded_fps": null,
+      "file_size_bytes": 4035418,
+      "host_start_perf_s": 88923.5088136,
+      "host_end_perf_s": 88938.8459909,
+      "host_start_utc": "2026-10-09T08:37:07.833887+00:00",
+      "host_end_utc": "2026-10-09T08:37:23.170682+00:00",
+      "startup_elapsed_s": 4.136488100004499,
+      "recorded_wall_duration_s": 15.337177299996256,
+      "note": "Packet arrival-time timestamps are not camera capture timestamps and are not synchronized to robot motion. With reordered B-frames wallclock timestamps may be unsuitable; check the FFmpeg log and inspect actual playback.",
+      "error": null
+    }
+  },
+  "error_ids": "0,{[]},GetErrorID();"
+}

@@ -1,0 +1,8 @@
+{
+  "name": "servop_behavior",
+  "mode": "csv",
+  "csv_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\servop_behavior\\points_servop_cubic.csv",
+  "aheadtime": 20.0,
+  "gain": 500.0,
+  "global_speed_factor": 100
+}

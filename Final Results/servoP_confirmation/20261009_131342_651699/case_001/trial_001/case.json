@@ -1,0 +1,9 @@
+{
+  "name": "servoP_confirmation",
+  "mode": "csv",
+  "csv_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\servoP_confirmation\\points_servoP_quintic.csv",
+  "csv_sha256": "74e9278db1d8e5d7246ca15f10b9283d7c68fe243d7261c96ccce96ff3d145c7",
+  "aheadtime": 20.0,
+  "gain": 300.0,
+  "global_speed_factor": 100
+}

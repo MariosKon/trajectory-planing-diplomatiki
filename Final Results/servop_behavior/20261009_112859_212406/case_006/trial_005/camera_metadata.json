@@ -1,0 +1,22 @@
+{
+  "path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\servop_behavior\\20261009_112859_212406\\case_006\\trial_005\\camera.mkv",
+  "format": "matroska",
+  "codec": "copy",
+  "rtsp_transport": "tcp",
+  "timestamp_mode": "host_wallclock_on_packet_arrival",
+  "startup_confirmed_by": "ffmpeg_frame_progress",
+  "ffmpeg_log": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\servop_behavior\\20261009_112859_212406\\case_006\\trial_005\\ffmpeg_camera.log",
+  "ffmpeg_progress": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\servop_behavior\\20261009_112859_212406\\case_006\\trial_005\\ffmpeg_camera_progress.txt",
+  "frame_count": 342,
+  "received_frames": null,
+  "encoded_fps": null,
+  "file_size_bytes": 3721237,
+  "host_start_perf_s": 89025.45464,
+  "host_end_perf_s": 89038.1395684,
+  "host_start_utc": "2026-10-09T08:38:49.779040+00:00",
+  "host_end_utc": "2026-10-09T08:39:02.464057+00:00",
+  "startup_elapsed_s": 2.438890100005665,
+  "recorded_wall_duration_s": 12.684928400005447,
+  "note": "Packet arrival-time timestamps are not camera capture timestamps and are not synchronized to robot motion. With reordered B-frames wallclock timestamps may be unsuitable; check the FFmpeg log and inspect actual playback.",
+  "error": null
+}
