@@ -1,0 +1,122 @@
+{
+  "status": "completed",
+  "case": {
+    "name": "ruckig_sweep_07",
+    "study": "L9",
+    "matlab_matrix_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\piecewise_sweep\\case_matrix.csv",
+    "matlab_matrix_sha256": "6b572f2b5c382277f6af9ec23b690f4193b0942693015b6ea7bd238327ac174c",
+    "velocity_limit_mm_s": 460.0,
+    "acceleration_limit_mm_s2": 500.0,
+    "global_speed_factor": 100,
+    "exceeds_movel_fast_speed": false,
+    "jerk_limit_mm_s3": 16000.0,
+    "mode": "ruckig",
+    "start": [
+      -600.0,
+      -400.0,
+      250.0,
+      -90.0,
+      0.0,
+      90.0
+    ],
+    "target": [
+      -600.0,
+      400.0,
+      250.0,
+      -90.0,
+      0.0,
+      90.0
+    ],
+    "max_velocity": [
+      460.0,
+      460.0,
+      460.0,
+      460.0,
+      460.0,
+      460.0
+    ],
+    "max_acceleration": [
+      500.0,
+      500.0,
+      500.0,
+      500.0,
+      500.0,
+      500.0
+    ],
+    "max_jerk": [
+      16000.0,
+      16000.0,
+      16000.0,
+      16000.0,
+      16000.0,
+      16000.0
+    ],
+    "minimum_duration_s": null
+  },
+  "rigol_requested_scale_s_per_div": 0.5,
+  "rigol_effective_scale_s_per_div": 0.5,
+  "motion": {
+    "command_count": 90,
+    "planned_trajectory_duration_s": 2.690380434782609,
+    "ruckig_trajectory_duration_s": 2.690380434782609,
+    "expected_stream_period_s": 2.6999999999999997,
+    "first_to_last_command_s": 2.6641574000095716,
+    "wait_for_robot_idle_s": 0.7215583000070183,
+    "effective_aheadtime": 20.0,
+    "effective_gain": 300.0,
+    "late_commands": 0,
+    "maximum_lateness_ms": 0.0,
+    "mean_command_duration_ms": 7.361643333085036,
+    "elapsed_s": 3.4236546000029193
+  },
+  "logging": {
+    "robot": {
+      "received_packets": 603,
+      "invalid_packets": 0,
+      "dropped_rows": 0,
+      "error_samples": 0,
+      "collision_samples": 0
+    },
+    "rigol": {
+      "resource": "USB0::0x1AB1::0x0517::DS1ZE264511439::INSTR",
+      "samples": 1200,
+      "error": null,
+      "warnings": [
+        "Power and energy use NORM display data; not motion-only energy. RAW scaling remains unverified."
+      ],
+      "power_trace_source": "NORM_DISPLAY",
+      "power_calibrated": true,
+      "power_data_valid": true
+    },
+    "camera": {
+      "path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\ruckig\\20261009_183413_094588\\case_007\\trial_004\\camera.mkv",
+      "format": "matroska",
+      "codec": "copy",
+      "rtsp_transport": "tcp",
+      "timestamp_mode": "host_wallclock_on_packet_arrival",
+      "startup_confirmed_by": "ffmpeg_frame_progress",
+      "ffmpeg_log": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\ruckig\\20261009_183413_094588\\case_007\\trial_004\\ffmpeg_camera.log",
+      "ffmpeg_progress": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\ruckig\\20261009_183413_094588\\case_007\\trial_004\\ffmpeg_camera_progress.txt",
+      "frame_count": 387,
+      "video_validation": {
+        "validation": "ffmpeg_decoded",
+        "decoded_frames": 387,
+        "empty_h264_nals_removed": 14,
+        "original_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\ruckig\\20261009_183413_094588\\case_007\\trial_004\\camera_original.mkv",
+        "note": "Video timestamps are host/RTSP estimates, not synchronized capture times."
+      },
+      "received_frames": null,
+      "encoded_fps": null,
+      "file_size_bytes": 4073441,
+      "host_start_perf_s": 114682.6751551,
+      "host_end_perf_s": 114697.1862749,
+      "host_start_utc": "2026-10-09T15:46:26.998718+00:00",
+      "host_end_utc": "2026-10-09T15:46:41.509501+00:00",
+      "startup_elapsed_s": 3.3588217999931658,
+      "recorded_wall_duration_s": 14.511119799994049,
+      "note": "RTSP/host packet timestamps are not camera exposure times, and are not synchronized to robot or Rigol measurements. Check video_validation for decodability and repair status, and preserve ffmpeg_camera.log for source diagnostics.",
+      "error": null
+    }
+  },
+  "error_ids": "0,{[]},GetErrorID();"
+}

@@ -1,0 +1,53 @@
+{
+  "name": "ruckig_sweep_09",
+  "study": "L9",
+  "matlab_matrix_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\piecewise_sweep\\case_matrix.csv",
+  "matlab_matrix_sha256": "6b572f2b5c382277f6af9ec23b690f4193b0942693015b6ea7bd238327ac174c",
+  "velocity_limit_mm_s": 460.0,
+  "acceleration_limit_mm_s2": 1100.0,
+  "global_speed_factor": 100,
+  "exceeds_movel_fast_speed": false,
+  "jerk_limit_mm_s3": 10000.0,
+  "mode": "ruckig",
+  "start": [
+    -600.0,
+    -400.0,
+    250.0,
+    -90.0,
+    0.0,
+    90.0
+  ],
+  "target": [
+    -600.0,
+    400.0,
+    250.0,
+    -90.0,
+    0.0,
+    90.0
+  ],
+  "max_velocity": [
+    460.0,
+    460.0,
+    460.0,
+    460.0,
+    460.0,
+    460.0
+  ],
+  "max_acceleration": [
+    1100.0,
+    1100.0,
+    1100.0,
+    1100.0,
+    1100.0,
+    1100.0
+  ],
+  "max_jerk": [
+    10000.0,
+    10000.0,
+    10000.0,
+    10000.0,
+    10000.0,
+    10000.0
+  ],
+  "minimum_duration_s": null
+}

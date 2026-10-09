@@ -1,0 +1,89 @@
+{
+  "status": "completed",
+  "case": {
+    "name": "double_s_sweep_04",
+    "study": "L9",
+    "matlab_matrix_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\piecewise_sweep\\case_matrix.csv",
+    "matlab_matrix_sha256": "6b572f2b5c382277f6af9ec23b690f4193b0942693015b6ea7bd238327ac174c",
+    "velocity_limit_mm_s": 380.0,
+    "acceleration_limit_mm_s2": 500.0,
+    "global_speed_factor": 100,
+    "exceeds_movel_fast_speed": false,
+    "jerk_limit_mm_s3": 10000.0,
+    "mode": "csv",
+    "csv_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\double_s\\points_double_s_sweep_04.csv",
+    "csv_sha256": "f1e1a19065a9dedd51b89a5dd3418054725273139c9a3af173ff1c481d3627ec",
+    "expected_points": 99,
+    "duration_s": 2.94,
+    "minimum_theoretical_duration_s": 2.915263157894737,
+    "expected_peak_speed_mm_s": 376.80272108843536,
+    "expected_peak_acceleration_mm_s2": 491.62150491568286,
+    "expected_peak_jerk_mm_s3": 9749.701094622154
+  },
+  "rigol_requested_scale_s_per_div": 0.5,
+  "rigol_effective_scale_s_per_div": 0.5,
+  "motion": {
+    "command_count": 99,
+    "planned_trajectory_duration_s": 2.94,
+    "ruckig_trajectory_duration_s": null,
+    "expected_stream_period_s": 2.9699999999999998,
+    "first_to_last_command_s": 2.9280299999954877,
+    "wait_for_robot_idle_s": 0.7220984999876237,
+    "effective_aheadtime": 20.0,
+    "effective_gain": 300.0,
+    "late_commands": 0,
+    "maximum_lateness_ms": 0.0,
+    "mean_command_duration_ms": 7.206325251973619,
+    "elapsed_s": 3.696470999988378
+  },
+  "logging": {
+    "robot": {
+      "received_packets": 638,
+      "invalid_packets": 0,
+      "dropped_rows": 0,
+      "error_samples": 0,
+      "collision_samples": 0
+    },
+    "rigol": {
+      "resource": "USB0::0x1AB1::0x0517::DS1ZE264511439::INSTR",
+      "samples": 1200,
+      "error": null,
+      "warnings": [
+        "Power and energy use NORM display data; not motion-only energy. RAW scaling remains unverified."
+      ],
+      "power_trace_source": "NORM_DISPLAY",
+      "power_calibrated": true,
+      "power_data_valid": true
+    },
+    "camera": {
+      "path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\double_s\\20261009_190853_762003\\case_004\\trial_004\\camera.mkv",
+      "format": "matroska",
+      "codec": "copy",
+      "rtsp_transport": "tcp",
+      "timestamp_mode": "host_wallclock_on_packet_arrival",
+      "startup_confirmed_by": "ffmpeg_frame_progress",
+      "ffmpeg_log": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\double_s\\20261009_190853_762003\\case_004\\trial_004\\ffmpeg_camera.log",
+      "ffmpeg_progress": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\double_s\\20261009_190853_762003\\case_004\\trial_004\\ffmpeg_camera_progress.txt",
+      "frame_count": 386,
+      "video_validation": {
+        "validation": "ffmpeg_decoded",
+        "decoded_frames": 386,
+        "empty_h264_nals_removed": 14,
+        "original_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\double_s\\20261009_190853_762003\\case_004\\trial_004\\camera_original.mkv",
+        "note": "Video timestamps are host/RTSP estimates, not synchronized capture times."
+      },
+      "received_frames": null,
+      "encoded_fps": null,
+      "file_size_bytes": 4052886,
+      "host_start_perf_s": 116448.7698062,
+      "host_end_perf_s": 116462.7913121,
+      "host_start_utc": "2026-10-09T16:15:53.092680+00:00",
+      "host_end_utc": "2026-10-09T16:16:07.114780+00:00",
+      "startup_elapsed_s": 2.8554455999983475,
+      "recorded_wall_duration_s": 14.021505900003831,
+      "note": "RTSP/host packet timestamps are not camera exposure times, and are not synchronized to robot or Rigol measurements. Check video_validation for decodability and repair status, and preserve ffmpeg_camera.log for source diagnostics.",
+      "error": null
+    }
+  },
+  "error_ids": "0,{[]},GetErrorID();"
+}

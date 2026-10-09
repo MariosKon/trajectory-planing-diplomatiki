@@ -1,0 +1,20 @@
+{
+  "name": "double_s_sweep_03",
+  "study": "L9",
+  "matlab_matrix_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\piecewise_sweep\\case_matrix.csv",
+  "matlab_matrix_sha256": "6b572f2b5c382277f6af9ec23b690f4193b0942693015b6ea7bd238327ac174c",
+  "velocity_limit_mm_s": 300.0,
+  "acceleration_limit_mm_s2": 1100.0,
+  "global_speed_factor": 100,
+  "exceeds_movel_fast_speed": false,
+  "jerk_limit_mm_s3": 16000.0,
+  "mode": "csv",
+  "csv_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\double_s\\points_double_s_sweep_03.csv",
+  "csv_sha256": "82d644cbad5ea29bd6dbe06e69ac63572929dbcce6d1a5c71f61374aae7b1b41",
+  "expected_points": 102,
+  "duration_s": 3.03,
+  "minimum_theoretical_duration_s": 3.008143939393939,
+  "expected_peak_speed_mm_s": 297.8360336033603,
+  "expected_peak_acceleration_mm_s2": 1084.1881467093353,
+  "expected_peak_jerk_mm_s3": 15656.256838578738
+}

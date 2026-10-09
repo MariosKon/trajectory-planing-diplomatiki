@@ -1,0 +1,62 @@
+{
+  "robot_ip": "192.168.5.1",
+  "home": [
+    32,
+    40,
+    91,
+    48,
+    122,
+    -180
+  ],
+  "start": [
+    -600,
+    -400,
+    250,
+    -90,
+    0,
+    90
+  ],
+  "target": [
+    -600,
+    400,
+    250,
+    -90,
+    0,
+    90
+  ],
+  "servo_time_s": 0.03,
+  "aheadtime": 20,
+  "gain": 500,
+  "servop_aheadtime": 20,
+  "servop_gain": 300,
+  "motion_timeout_s": 60,
+  "settle_s": 3,
+  "slow_speed": 50,
+  "slow_acceleration": 50,
+  "tool_index": null,
+  "tool_pose": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "payload_kg": null,
+  "rigol_resource": "USB0::0x1AB1::0x0517::DS1ZE264511439::INSTR",
+  "rigol_current_channel": "CHAN1",
+  "rigol_voltage_channel": "CHAN2",
+  "rigol_horizontal_scale_s_per_div": 0.5,
+  "rigol_memory_depth": 60000,
+  "rigol_preview_points": 1200,
+  "rigol_download_raw": false,
+  "rigol_current_A_per_unit": null,
+  "rigol_voltage_V_per_unit": 1,
+  "camera_url": "rtsp://192.168.50.146:8554",
+  "camera_pre_delay_s": 0,
+  "camera_stop_delay_s": 2,
+  "robot_logger_pre_delay_s": 0.5,
+  "robot_logger_post_delay_s": 1,
+  "rigol_pre_delay_s": 1.5,
+  "rigol_stop_delay_s": 0
+}

@@ -1,0 +1,93 @@
+{
+  "status": "partial",
+  "case": {
+    "name": "double_s_sweep_01",
+    "study": "L9",
+    "matlab_matrix_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\piecewise_sweep\\case_matrix.csv",
+    "matlab_matrix_sha256": "6b572f2b5c382277f6af9ec23b690f4193b0942693015b6ea7bd238327ac174c",
+    "velocity_limit_mm_s": 300.0,
+    "acceleration_limit_mm_s2": 500.0,
+    "global_speed_factor": 100,
+    "exceeds_movel_fast_speed": false,
+    "jerk_limit_mm_s3": 6000.0,
+    "mode": "csv",
+    "csv_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\double_s\\points_double_s_sweep_01.csv",
+    "csv_sha256": "95629b12f4933dbd901ce8f4a12360e53689ef17c6d4d6cbee55702410c25793",
+    "expected_points": 113,
+    "duration_s": 3.36,
+    "minimum_theoretical_duration_s": 3.3499999999999996,
+    "expected_peak_speed_mm_s": 299.10714285714283,
+    "expected_peak_acceleration_mm_s2": 497.0282383786847,
+    "expected_peak_jerk_mm_s3": 5946.587852030691
+  },
+  "rigol_requested_scale_s_per_div": 0.5,
+  "rigol_effective_scale_s_per_div": 0.5,
+  "motion": {
+    "command_count": 113,
+    "planned_trajectory_duration_s": 3.36,
+    "ruckig_trajectory_duration_s": null,
+    "expected_stream_period_s": 3.3899999999999997,
+    "first_to_last_command_s": 3.3398841000016546,
+    "wait_for_robot_idle_s": 0.7254608999937773,
+    "effective_aheadtime": 20.0,
+    "effective_gain": 300.0,
+    "late_commands": 1,
+    "maximum_lateness_ms": 3.6843999987468123,
+    "mean_command_duration_ms": 8.261779645680392,
+    "elapsed_s": 4.118050300006871
+  },
+  "logging": {
+    "robot": {
+      "received_packets": 689,
+      "invalid_packets": 0,
+      "dropped_rows": 0,
+      "error_samples": 0,
+      "collision_samples": 0
+    },
+    "rigol": {
+      "resource": "USB0::0x1AB1::0x0517::DS1ZE264511439::INSTR",
+      "samples": 1200,
+      "error": "Rigol waveform duration shorter than acquisition duration",
+      "warnings": [
+        "Display waveform covers 5.995s of 6.861s host acquisition (87.4%). Power data invalid.",
+        "Power and energy use NORM display data; not motion-only energy. RAW scaling remains unverified."
+      ],
+      "power_trace_source": "NORM_DISPLAY",
+      "power_calibrated": true,
+      "power_data_valid": false
+    },
+    "camera": {
+      "path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\double_s\\20261009_190853_762003\\case_001\\trial_003\\camera.mkv",
+      "format": "matroska",
+      "codec": "copy",
+      "rtsp_transport": "tcp",
+      "timestamp_mode": "host_wallclock_on_packet_arrival",
+      "startup_confirmed_by": "ffmpeg_frame_progress",
+      "ffmpeg_log": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\double_s\\20261009_190853_762003\\case_001\\trial_003\\ffmpeg_camera.log",
+      "ffmpeg_progress": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\double_s\\20261009_190853_762003\\case_001\\trial_003\\ffmpeg_camera_progress.txt",
+      "frame_count": 386,
+      "video_validation": {
+        "validation": "ffmpeg_decoded",
+        "decoded_frames": 386,
+        "empty_h264_nals_removed": 14,
+        "original_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\double_s\\20261009_190853_762003\\case_001\\trial_003\\camera_original.mkv",
+        "note": "Video timestamps are host/RTSP estimates, not synchronized capture times."
+      },
+      "received_frames": null,
+      "encoded_fps": null,
+      "file_size_bytes": 4052572,
+      "host_start_perf_s": 116079.4812047,
+      "host_end_perf_s": 116093.8589151,
+      "host_start_utc": "2026-10-09T16:09:43.804535+00:00",
+      "host_end_utc": "2026-10-09T16:09:58.181671+00:00",
+      "startup_elapsed_s": 3.2029586999997264,
+      "recorded_wall_duration_s": 14.377710400003707,
+      "note": "RTSP/host packet timestamps are not camera exposure times, and are not synchronized to robot or Rigol measurements. Check video_validation for decodability and repair status, and preserve ffmpeg_camera.log for source diagnostics.",
+      "error": null
+    }
+  },
+  "data_errors": {
+    "rigol": "Rigol waveform duration shorter than acquisition duration"
+  },
+  "error_ids": "0,{[]},GetErrorID();"
+}

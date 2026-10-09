@@ -1,0 +1,118 @@
+{
+  "status": "completed",
+  "case": {
+    "name": "ruckig_T2p31",
+    "duration_s": 2.31,
+    "expected_peak_speed_mm_s": 460.0,
+    "exceeds_movel_fast_speed": false,
+    "global_speed_factor": 100,
+    "mode": "ruckig",
+    "start": [
+      -600.0,
+      -400.0,
+      250.0,
+      -90.0,
+      0.0,
+      90.0
+    ],
+    "target": [
+      -600.0,
+      400.0,
+      250.0,
+      -90.0,
+      0.0,
+      90.0
+    ],
+    "max_velocity": [
+      460.0,
+      460.0,
+      460.0,
+      460.0,
+      460.0,
+      460.0
+    ],
+    "max_acceleration": [
+      1074.3843615130743,
+      1074.3843615130743,
+      1074.3843615130743,
+      1074.3843615130743,
+      1074.3843615130743,
+      1074.3843615130743
+    ],
+    "max_jerk": [
+      7528.054932155584,
+      7528.054932155584,
+      7528.054932155584,
+      7528.054932155584,
+      7528.054932155584,
+      7528.054932155584
+    ],
+    "minimum_duration_s": 2.31
+  },
+  "rigol_requested_scale_s_per_div": 0.5,
+  "rigol_effective_scale_s_per_div": 0.5,
+  "motion": {
+    "command_count": 78,
+    "planned_trajectory_duration_s": 2.31,
+    "ruckig_trajectory_duration_s": 2.31,
+    "expected_stream_period_s": 2.34,
+    "first_to_last_command_s": 2.3017250999982934,
+    "wait_for_robot_idle_s": 0.8266382000001613,
+    "effective_aheadtime": 20.0,
+    "effective_gain": 300.0,
+    "late_commands": 0,
+    "maximum_lateness_ms": 0.0,
+    "mean_command_duration_ms": 7.779583333803412,
+    "elapsed_s": 3.1707420000020647
+  },
+  "logging": {
+    "robot": {
+      "received_packets": 572,
+      "invalid_packets": 0,
+      "dropped_rows": 0,
+      "error_samples": 0,
+      "collision_samples": 0
+    },
+    "rigol": {
+      "resource": "USB0::0x1AB1::0x0517::DS1ZE264511439::INSTR",
+      "samples": 1200,
+      "error": null,
+      "warnings": [
+        "Power and energy use NORM display data; not motion-only energy. RAW scaling remains unverified."
+      ],
+      "power_trace_source": "NORM_DISPLAY",
+      "power_calibrated": true,
+      "power_data_valid": true
+    },
+    "camera": {
+      "path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\ruckig_matched\\20261009_185621_734797\\case_003\\trial_002\\camera.mkv",
+      "format": "matroska",
+      "codec": "copy",
+      "rtsp_transport": "tcp",
+      "timestamp_mode": "host_wallclock_on_packet_arrival",
+      "startup_confirmed_by": "ffmpeg_frame_progress",
+      "ffmpeg_log": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\ruckig_matched\\20261009_185621_734797\\case_003\\trial_002\\ffmpeg_camera.log",
+      "ffmpeg_progress": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\ruckig_matched\\20261009_185621_734797\\case_003\\trial_002\\ffmpeg_camera_progress.txt",
+      "frame_count": 386,
+      "video_validation": {
+        "validation": "ffmpeg_decoded",
+        "decoded_frames": 386,
+        "empty_h264_nals_removed": 14,
+        "original_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\ruckig_matched\\20261009_185621_734797\\case_003\\trial_002\\camera_original.mkv",
+        "note": "Video timestamps are host/RTSP estimates, not synchronized capture times."
+      },
+      "received_frames": null,
+      "encoded_fps": null,
+      "file_size_bytes": 4047439,
+      "host_start_perf_s": 115524.6379869,
+      "host_end_perf_s": 115539.1018478,
+      "host_start_utc": "2026-10-09T16:00:28.961221+00:00",
+      "host_end_utc": "2026-10-09T16:00:43.425346+00:00",
+      "startup_elapsed_s": 3.305610400013393,
+      "recorded_wall_duration_s": 14.463860900010332,
+      "note": "RTSP/host packet timestamps are not camera exposure times, and are not synchronized to robot or Rigol measurements. Check video_validation for decodability and repair status, and preserve ffmpeg_camera.log for source diagnostics.",
+      "error": null
+    }
+  },
+  "error_ids": "0,{[]},GetErrorID();"
+}

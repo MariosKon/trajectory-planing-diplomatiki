@@ -1,0 +1,89 @@
+{
+  "status": "completed",
+  "case": {
+    "name": "double_s_sweep_06",
+    "study": "L9",
+    "matlab_matrix_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\piecewise_sweep\\case_matrix.csv",
+    "matlab_matrix_sha256": "6b572f2b5c382277f6af9ec23b690f4193b0942693015b6ea7bd238327ac174c",
+    "velocity_limit_mm_s": 380.0,
+    "acceleration_limit_mm_s2": 1100.0,
+    "global_speed_factor": 100,
+    "exceeds_movel_fast_speed": false,
+    "jerk_limit_mm_s3": 6000.0,
+    "mode": "csv",
+    "csv_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\double_s\\points_double_s_sweep_06.csv",
+    "csv_sha256": "3fe67304b40f8e3e9c41a53e648fa3144c4709c23c8ef4fa77279aa479ea5f93",
+    "expected_points": 89,
+    "duration_s": 2.6399999999999997,
+    "minimum_theoretical_duration_s": 2.6340510366826155,
+    "expected_peak_speed_mm_s": 379.14370982552805,
+    "expected_peak_acceleration_mm_s2": 1095.0481161377468,
+    "expected_peak_jerk_mm_s3": 5959.530218037144
+  },
+  "rigol_requested_scale_s_per_div": 0.5,
+  "rigol_effective_scale_s_per_div": 0.5,
+  "motion": {
+    "command_count": 89,
+    "planned_trajectory_duration_s": 2.6399999999999997,
+    "ruckig_trajectory_duration_s": null,
+    "expected_stream_period_s": 2.67,
+    "first_to_last_command_s": 2.6279922999965493,
+    "wait_for_robot_idle_s": 0.7221111999970162,
+    "effective_aheadtime": 20.0,
+    "effective_gain": 300.0,
+    "late_commands": 0,
+    "maximum_lateness_ms": 0.0,
+    "mean_command_duration_ms": 7.401220224309828,
+    "elapsed_s": 3.395083999988856
+  },
+  "logging": {
+    "robot": {
+      "received_packets": 601,
+      "invalid_packets": 0,
+      "dropped_rows": 0,
+      "error_samples": 0,
+      "collision_samples": 0
+    },
+    "rigol": {
+      "resource": "USB0::0x1AB1::0x0517::DS1ZE264511439::INSTR",
+      "samples": 1200,
+      "error": null,
+      "warnings": [
+        "Power and energy use NORM display data; not motion-only energy. RAW scaling remains unverified."
+      ],
+      "power_trace_source": "NORM_DISPLAY",
+      "power_calibrated": true,
+      "power_data_valid": true
+    },
+    "camera": {
+      "path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\double_s\\20261009_190853_762003\\case_006\\trial_003\\camera.mkv",
+      "format": "matroska",
+      "codec": "copy",
+      "rtsp_transport": "tcp",
+      "timestamp_mode": "host_wallclock_on_packet_arrival",
+      "startup_confirmed_by": "ffmpeg_frame_progress",
+      "ffmpeg_log": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\double_s\\20261009_190853_762003\\case_006\\trial_003\\ffmpeg_camera.log",
+      "ffmpeg_progress": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\double_s\\20261009_190853_762003\\case_006\\trial_003\\ffmpeg_camera_progress.txt",
+      "frame_count": 386,
+      "video_validation": {
+        "validation": "ffmpeg_decoded",
+        "decoded_frames": 386,
+        "empty_h264_nals_removed": 14,
+        "original_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\double_s\\20261009_190853_762003\\case_006\\trial_003\\camera_original.mkv",
+        "note": "Video timestamps are host/RTSP estimates, not synchronized capture times."
+      },
+      "received_frames": null,
+      "encoded_fps": null,
+      "file_size_bytes": 4035014,
+      "host_start_perf_s": 116666.3955099,
+      "host_end_perf_s": 116680.9418074,
+      "host_start_utc": "2026-10-09T16:19:30.718996+00:00",
+      "host_end_utc": "2026-10-09T16:19:45.265096+00:00",
+      "startup_elapsed_s": 3.385231099993689,
+      "recorded_wall_duration_s": 14.546297499997308,
+      "note": "RTSP/host packet timestamps are not camera exposure times, and are not synchronized to robot or Rigol measurements. Check video_validation for decodability and repair status, and preserve ffmpeg_camera.log for source diagnostics.",
+      "error": null
+    }
+  },
+  "error_ids": "0,{[]},GetErrorID();"
+}

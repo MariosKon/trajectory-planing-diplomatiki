@@ -1,0 +1,13 @@
+{
+  "name": "double_s_T2p31",
+  "duration_s": 2.31,
+  "expected_peak_speed_mm_s": 460.0,
+  "exceeds_movel_fast_speed": false,
+  "global_speed_factor": 100,
+  "mode": "csv",
+  "csv_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\double_s\\points_double_s_T2p31.csv",
+  "csv_sha256": "e5094276558f2e47c62a96fb437a9bb0e524fe4c302950f35e7df41fd2a05ea9",
+  "expected_points": 78,
+  "expected_peak_acceleration_mm_s2": 1074.3843615130743,
+  "expected_peak_jerk_mm_s3": 7528.054932155584
+}
