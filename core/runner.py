@@ -2,6 +2,7 @@ import csv
 import hashlib
 import json
 import time
+import traceback
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
@@ -621,7 +622,13 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
                         record["status"] = "failed"
                         record["error"] = repr(exc)
                         abort = True
+                        details = traceback.format_exc()
+                        (folder / "trial_error_traceback.txt").write_text(
+                            details, encoding="utf-8"
+                        )
                         log(f"    [ERROR] {exc!r}")
+                        log(f"    [TRACEBACK] Saved to {folder / 'trial_error_traceback.txt'}")
+                        print(details, flush=True)
 
                     finally:
                         log("    [ANALYSIS] Calculating metrics")
