@@ -62,7 +62,7 @@ def capture_config_for_case(cfg, case):
         float(case["duration_s"]) + cfg.rigol_pre_delay_s
         + cfg.robot_logger_post_delay_s + 1.5
     )
-    scale = max(1.0, required_span_s / 12.0)
+    scale = "rigol_horizontal_scale_s_per_div" 
     if cfg.rigol_horizontal_scale_s_per_div >= scale:
         return cfg
     return replace(cfg, rigol_horizontal_scale_s_per_div=scale)
