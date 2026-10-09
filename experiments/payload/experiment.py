@@ -1,4 +1,4 @@
-"""Fastest previously hardware-tested trajectories for a two-phase payload comparison.
+"""Fastest previously hardware-tested trajectories for a three-condition payload comparison.
 
 This experiment never changes the physical payload or programs SetPayload
 implicitly. Each phase is a *separate* invocation; the operator must change
@@ -22,7 +22,7 @@ FASTEST_TESTED_CASES = (
     ("ruckig", 9),
     ("trapezoidal", 9),
 )
-PHASES = ("baseline", "changed")
+PHASES = ("baseline", "full", "empty")
 
 
 def build_cases(config, phase="baseline", physical_payload_mass_kg=None):
