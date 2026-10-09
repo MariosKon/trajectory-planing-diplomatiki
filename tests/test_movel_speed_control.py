@@ -2,11 +2,11 @@ import sys
 import types
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from core.config import Config
 from core.robot import slow_move
-from core.runner import batch, configure_motion_speed
+from core.runner import batch, configure_motion_speed, execute_motion
 
 
 class RecordingRobotControl:
@@ -19,13 +19,75 @@ class RecordingRobotControl:
 
 
 class ConfigureMotionSpeedTests(unittest.TestCase):
-    def test_movel_case_keeps_global_speed_at_100(self):
+    def test_movel_matrix_uses_case_speed_as_global_factor(self):
+        for speed in (50, 75, 100):
+            with self.subTest(speed=speed):
+                control = RecordingRobotControl()
+                robot = type("Robot", (), {"robot_control": control})()
+
+                configure_motion_speed(robot, {"mode": "movel", "speed": speed})
+
+                self.assertEqual(control.speed_factors, [speed])
+
+    def test_movej_uses_same_speed_control(self):
         control = RecordingRobotControl()
         robot = type("Robot", (), {"robot_control": control})()
 
-        configure_motion_speed(robot, {"mode": "movel", "speed": 75})
+        configure_motion_speed(robot, {"mode": "movej", "speed": 75})
+
+        self.assertEqual(control.speed_factors, [75])
+
+    def test_explicit_global_factor_still_overrides_case_speed(self):
+        control = RecordingRobotControl()
+        robot = type("Robot", (), {"robot_control": control})()
+
+        configure_motion_speed(robot, {
+            "mode": "movel", "speed": 75, "global_speed_factor": 60,
+        })
+
+        self.assertEqual(control.speed_factors, [60])
+
+    def test_explicit_global_factor_for_servo_is_unchanged(self):
+        control = RecordingRobotControl()
+        robot = type("Robot", (), {"robot_control": control})()
+
+        configure_motion_speed(robot, {"mode": "csv", "global_speed_factor": 100})
 
         self.assertEqual(control.speed_factors, [100])
+
+    def test_movel_local_velocity_is_fixed_at_100(self):
+        target = [-600, 400, 250, -90, 0, 90]
+        motion = MagicMock()
+        motion.MovL.return_value = "0,{},MovL(...)"
+        robot = type("Robot", (), {"motion": motion})()
+        manager = MagicMock()
+        fake_sdk = types.ModuleType("dobot_sdk")
+        fake_sdk.CoordinateType = types.SimpleNamespace(
+            CARTESIAN="cartesian", JOINT="joint",
+        )
+
+        with patch.dict(sys.modules, {"dobot_sdk": fake_sdk}):
+            with patch("core.runner.wait_for_motion"):
+                result = execute_motion(
+                    robot, Config(),
+                    {
+                        "mode": "movel", "target": target,
+                        "speed": 50, "acceleration": 75,
+                    },
+                    manager, None,
+                )
+
+        motion.MovL.assert_called_once_with(
+            target, "cartesian", a=75, v=100,
+        )
+        manager.robot.set_commanded_point.assert_called_once_with(target)
+        event = manager.event.call_args.args
+        self.assertEqual(event[0], "MOTION_PARAMETERS")
+        self.assertIn("global_speed=50", event[1])
+        self.assertIn("v=100", event[1])
+        self.assertEqual(result["speed_percent"], 50)
+        self.assertEqual(result["global_speed_factor"], 50)
+        self.assertEqual(result["command_v_percent"], 100)
 
     def test_non_movel_cases_do_not_change_global_speed(self):
         control = RecordingRobotControl()

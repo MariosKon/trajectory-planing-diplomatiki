@@ -23,9 +23,10 @@ def configure_motion_speed(robot, case):
         check_response(response)
         return response
     if case.get("mode") in ("movel", "movej"):
-        # Case speed is already supplied as MovL/MovJ v=... below.
-        # Do not apply it a second time as a global scale.
-        response = robot.robot_control.SpeedFactor(100)
+        # The measured controller did not vary TCP speed when only MovL's
+        # local v percentage changed. Use the case speed as the global factor,
+        # and keep the motion command's local v at 100 (no double scaling).
+        response = robot.robot_control.SpeedFactor(case.get("speed", 100))
         check_response(response)
         return response
     return None
@@ -44,19 +45,37 @@ def execute_motion(robot, cfg, case, manager, run_dir):
         manager.robot.set_commanded_point(target)
         speed = case.get("speed", 100)
         accel = case.get("acceleration", 100)
-        manager.event("MOTION_PARAMETERS", f"mode={mode}; v={speed}; a={accel}; global_speed=100")
-        print(f"[{mode.upper()}] v={speed}% a={accel}% global=100%", flush=True)
+        global_speed = case.get("global_speed_factor", speed)
+        command_v = 100
+        manager.event(
+            "MOTION_PARAMETERS",
+            f"mode={mode}; requested_speed={speed}; v={command_v}; "
+            f"a={accel}; global_speed={global_speed}",
+        )
+        print(
+            f"[{mode.upper()}] SpeedFactor={global_speed}% "
+            f"v={command_v}% a={accel}%",
+            flush=True,
+        )
         if mode == "movel":
             response = robot.motion.MovL(
-                target, CoordinateType.CARTESIAN, a=accel, v=speed
+                target, CoordinateType.CARTESIAN, a=accel, v=command_v
             )
         else:
             response = robot.motion.MovJ(
-                target, CoordinateType.JOINT, a=accel, v=speed
+                target, CoordinateType.JOINT, a=accel, v=command_v
             )
         check_response(response)
         wait_for_motion(robot, cfg.motion_timeout_s)
-        return {"command_count": 1, "response": str(response), "speed_percent": speed, "acceleration_percent": accel, "elapsed_s": time.perf_counter()-started}
+        return {
+            "command_count": 1,
+            "response": str(response),
+            "speed_percent": speed,
+            "global_speed_factor": global_speed,
+            "command_v_percent": command_v,
+            "acceleration_percent": accel,
+            "elapsed_s": time.perf_counter()-started,
+        }
 
     if mode == "csv":
         if "csv_sha256" in case:
@@ -475,6 +494,13 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
                 for key in ("aheadtime", "gain", "global_speed_factor"):
                     if key in case:
                         record[key] = case[key]
+                if case.get("mode") in ("movel", "movej"):
+                    record["speed_percent"] = case.get("speed", 100)
+                    record["acceleration_percent"] = case.get("acceleration", 100)
+                    record["global_speed_factor"] = case.get(
+                        "global_speed_factor", case.get("speed", 100)
+                    )
+                    record["command_v_percent"] = 100
 
                 if execute:
                     try:
