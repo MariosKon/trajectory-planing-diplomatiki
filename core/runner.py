@@ -144,6 +144,15 @@ def execute_motion(robot, cfg, case, manager, run_dir):
     else:
         # Online Ruckig streams ServoP commands.
         aheadtime, gain = effective_servo_parameters(cfg, case, "ServoP")
+        manager.event(
+            "MOTION_PARAMETERS",
+            f"servo_t_s={period};aheadtime={aheadtime};gain={gain};"
+            f"ruckig_minimum_duration_s={case.get('minimum_duration_s')};"
+            f"max_velocity={case['max_velocity']};"
+            f"max_acceleration={case['max_acceleration']};"
+            f"max_jerk={case['max_jerk']};"
+            f"global_speed={case.get('global_speed_factor', cfg.slow_speed)}",
+        )
 
     fields = [
         "sample", "host_time_s", "mode", "servo_t_s", "aheadtime", "gain", "lateness_ms",
@@ -154,6 +163,7 @@ def execute_motion(robot, cfg, case, manager, run_dir):
     count = 0
     first_command_perf = None
     last_command_perf = None
+    ruckig_trajectory_duration_s = None
     with (run_dir/"commands.csv").open(
         "w", newline="", encoding="utf-8"
     ) as handle:
@@ -167,6 +177,7 @@ def execute_motion(robot, cfg, case, manager, run_dir):
                 finished = step.finished
                 planner_time = step.time_s
                 calculation = step.calculation_duration_us
+                ruckig_trajectory_duration_s = step.trajectory_duration_s
             else:
                 if count >= len(points):
                     break
@@ -249,8 +260,10 @@ def execute_motion(robot, cfg, case, manager, run_dir):
     return {
         "command_count": count,
         "planned_trajectory_duration_s": (
-            (count-1)*period if planner is None else None
+            (count-1)*period if planner is None
+            else ruckig_trajectory_duration_s
         ),
+        "ruckig_trajectory_duration_s": ruckig_trajectory_duration_s,
         "expected_stream_period_s": count*period,
         "first_to_last_command_s": (
             last_command_perf-first_command_perf
@@ -487,6 +500,10 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
             ("minimum_duration_s", "Min duration s"),
             ("duration_s", "Planned duration s"),
             ("expected_peak_speed_mm_s", "Planned peak TCP mm/s"),
+            ("velocity_limit_mm_s", "V limit mm/s"),
+            ("acceleration_limit_mm_s2", "A limit mm/s2"),
+            ("jerk_limit_mm_s3", "J limit mm/s3"),
+            ("minimum_theoretical_duration_s", "Minimum theoretical time"),
             ("aheadtime", "Aheadtime"),
             ("gain", "Gain"),
             ("global_speed_factor", "Global speed %"),
@@ -575,6 +592,10 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
                     "aheadtime", "gain", "global_speed_factor",
                     "duration_s", "expected_points",
                     "expected_peak_speed_mm_s",
+                    "velocity_limit_mm_s",
+                    "acceleration_limit_mm_s2",
+                    "jerk_limit_mm_s3",
+                    "minimum_theoretical_duration_s",
                     "expected_peak_acceleration_mm_s2",
                     "expected_peak_jerk_mm_s3",
                     "exceeds_movel_fast_speed",
@@ -603,6 +624,7 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
                         )
                         for field in (
                             "planned_trajectory_duration_s",
+                            "ruckig_trajectory_duration_s",
                             "expected_stream_period_s",
                             "first_to_last_command_s",
                             "wait_for_robot_idle_s",
