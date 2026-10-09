@@ -1,0 +1,19 @@
+{
+  "name": "trapezoidal_sweep_02",
+  "study": "L9",
+  "matlab_matrix_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\piecewise_sweep\\case_matrix.csv",
+  "matlab_matrix_sha256": "6b572f2b5c382277f6af9ec23b690f4193b0942693015b6ea7bd238327ac174c",
+  "velocity_limit_mm_s": 300.0,
+  "acceleration_limit_mm_s2": 800.0,
+  "global_speed_factor": 100,
+  "exceeds_movel_fast_speed": false,
+  "unbounded_transition_jerk": true,
+  "mode": "csv",
+  "csv_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\trapezoidal\\points_trapezoidal_sweep_02.csv",
+  "csv_sha256": "248ae518dc896721854e1e360dae1973a4cafec3263881c189c782f6a373d323",
+  "expected_points": 103,
+  "duration_s": 3.06,
+  "minimum_theoretical_duration_s": 3.0416666666666665,
+  "expected_peak_speed_mm_s": 298.20261437908493,
+  "expected_peak_acceleration_mm_s2": 790.4426597557443
+}

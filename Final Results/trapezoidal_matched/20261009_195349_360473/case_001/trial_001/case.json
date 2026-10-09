@@ -1,0 +1,13 @@
+{
+  "name": "trapezoidal_T3p93",
+  "duration_s": 3.93,
+  "expected_peak_speed_mm_s": 300.0,
+  "exceeds_movel_fast_speed": false,
+  "global_speed_factor": 100,
+  "mode": "csv",
+  "csv_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\trapezoidal\\points_trapezoidal_T3p93.csv",
+  "csv_sha256": "f255519f17da401b9a140c8fb978c8eb03acd344d51102f033084eb6b10c2178",
+  "expected_points": 132,
+  "expected_peak_acceleration_mm_s2": 237.46701846965692,
+  "unbounded_transition_jerk": true
+}

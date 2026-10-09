@@ -1,0 +1,15 @@
+host_time_s,host_utc,event,details
+7.657473899991601,2026-10-09T17:06:20.455887+00:00,ROBOT_LOGGER_STARTED,
+7.658213799993973,2026-10-09T17:06:20.456884+00:00,CAMERA_STARTED,Camera started before robot feedback
+7.658920199988643,2026-10-09T17:06:20.457882+00:00,RIGOL_STARTED,Rigol started before robot feedback
+8.160267799990834,2026-10-09T17:06:20.959480+00:00,ROBOT_PREMOTION_READY,lead_s=0.500112
+8.162116999999853,2026-10-09T17:06:20.961428+00:00,RIGOL_PREMOTION_READY,lead_s=1.510943
+8.16520920000039,2026-10-09T17:06:20.964421+00:00,RIGOL_TO_MOTION_LEAD,seconds=1.513054
+8.167550099999062,2026-10-09T17:06:20.966415+00:00,MOTION_START,"{'name': 'trapezoidal_sweep_03', 'study': 'L9', 'matlab_matrix_path': 'C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\piecewise_sweep\\case_matrix.csv', 'matlab_matrix_sha256': '6b572f2b5c382277f6af9ec23b690f4193b0942693015b6ea7bd238327ac174c', 'velocity_limit_mm_s': 300.0, 'acceleration_limit_mm_s2': 1100.0, 'global_speed_factor': 100, 'exceeds_movel_fast_speed': False, 'unbounded_transition_jerk': True, 'mode': 'csv', 'csv_path': 'C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\trapezoidal\\points_trapezoidal_sweep_03.csv', 'csv_sha256': 'ce2d4aea8bdc1c4fec96f0e69a21225148c462e0aac982cc438fda3297a7c744', 'expected_points': 99, 'duration_s': 2.94, 'minimum_theoretical_duration_s': 2.9393939393939394, 'expected_peak_speed_mm_s': 299.9381570810142, 'expected_peak_acceleration_mm_s2': 1099.5465320052297}"
+8.177256399998441,2026-10-09T17:06:20.976433+00:00,MOTION_PARAMETERS,servo_t_s=0.03;aheadtime=20.0;gain=300.0;planned_duration_s=2.94;global_speed=100
+8.19094609998865,2026-10-09T17:06:20.989357+00:00,SERVO_FIRST_COMMAND_SENT,mode=ServoP;period_s=0.030000
+11.12147919999552,2026-10-09T17:06:23.920216+00:00,SERVO_LAST_COMMAND_SENT,count=99;scheduled_duration_s=2.940000
+11.141030899991165,2026-10-09T17:06:23.940164+00:00,SERVO_STREAM_PERIOD_END,count=99
+11.761768299998948,2026-10-09T17:06:24.561107+00:00,SERVO_ROBOT_IDLE,wait_s=0.619677
+11.762849499995355,2026-10-09T17:06:24.562082+00:00,MOTION_END,
+12.764211999994586,2026-10-09T17:06:25.563137+00:00,ROBOT_LOGGER_STOPPING,

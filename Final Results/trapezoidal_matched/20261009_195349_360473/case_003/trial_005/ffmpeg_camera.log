@@ -1,0 +1,24 @@
+ffmpeg stats and -progress period set to 1.
+Input #0, rtsp, from 'rtsp://192.168.50.146:8554':
+  Metadata:
+    title           : Unnamed
+    comment         : N/A
+  Duration: N/A, start: 1791565159.621383, bitrate: N/A
+  Stream #0:0: Video: h264 (High), yuv420p(tv, bt709, progressive), 960x1280, 90k tbr, 90k tbn, start 1791565160.041678
+  Stream #0:1: Audio: aac (LC), 44100 Hz, stereo, fltp, start 1791565159.621383
+Stream mapping:
+  Stream #0:0 -> #0:0 (copy)
+Output #0, matroska, to 'C:\Users\Panos\Desktop\diplomatiki\diplomatiki_clean\results\trapezoidal_matched\20261009_195349_360473\case_003\trial_005\camera.mkv':
+  Metadata:
+    title           : Unnamed
+    comment         : N/A
+    encoder         : Lavf63.1.102
+  Stream #0:0: Video: h264 (High) (H264 / 0x34363248), yuv420p(tv, bt709, progressive), 960x1280, q=2-31, 90k tbr, 1k tbn
+Press [q] to stop, [?] for help
+[matroska @ 000002db18238280] Timestamps are unset in a packet for stream 0. This is deprecated and will stop working in the future. Fix your code to set the timestamps properly
+
+
+[q] command received. Exiting.
+
+[out#0/matroska @ 000002db18232800] video:7037KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.081525%
+frame=  690 fps= 31 q=-1.0 Lsize=    7043KiB time=00:00:23.41 bitrate=2463.8kbits/s speed=1.05x elapsed=0:00:22.34    
