@@ -88,6 +88,14 @@ for c=1:9
     fprintf(fid,'%d,%.12g,%.12g,%.12g\n',c,caseMatrix(c,:));
 end
 fclose(fid);
+savedMatrix=readtable(matrixPath);
+assert(isequal(savedMatrix.Properties.VariableNames, ...
+    {'case','velocity_mm_s','acceleration_mm_s2','jerk_mm_s3'}), ...
+    'MATLAB case matrix header mismatch');
+assert(height(savedMatrix)==9, 'MATLAB case matrix count mismatch');
+assert(isequal(savedMatrix.case,(1:9)'), 'MATLAB case numbering mismatch');
+assert(max(abs(savedMatrix{:,2:4}-caseMatrix),[],'all')<1e-9, ...
+    'MATLAB case matrix values were not saved correctly');
 
 fprintf('\nMATLAB PIECEWISE PARAMETER SWEEP\n');
 fprintf('Pose start: [%s]\n',num2str(startPose,' %.6g'));
