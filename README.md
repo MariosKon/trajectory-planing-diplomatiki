@@ -123,8 +123,9 @@ python main.py --experiment double_s_matched --list-cases
 ```
 
 Real hardware is never commanded without `--execute`. Begin with supervised
-single repetitions before moving to faster settings. For the sweep, use a **common 1.0 s/div Rigol configuration** across
-all nine cases (or another validated common timebase). The 3.93-second
+single repetitions before moving to faster settings. For the sweep, pass `--config config/piecewise_sweep_rigol_1s.json`
+on **every** command (a separate, committed 1.0 s/div scope configuration),
+or use another common validated timebase. The 3.93-second
 matched-time profiles also need a longer Rigol span than the incomplete
 previous 0.5 s/div captures. Do not compare mixed NORM-display timebases
 without appropriate resampling and alignment.

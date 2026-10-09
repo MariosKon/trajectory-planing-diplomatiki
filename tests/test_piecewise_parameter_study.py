@@ -63,6 +63,15 @@ class SweepTests(unittest.TestCase):
             self.assertEqual(len(cases),3)
             self.assertEqual([c["duration_s"] for c in cases],[3.93,2.79,2.31])
 
+    def test_study_rigol_configuration(self):
+        root=Path(__file__).resolve().parents[1]
+        cfg=Config.load(root/"config"/"piecewise_sweep_rigol_1s.json")
+        self.assertEqual(cfg.rigol_horizontal_scale_s_per_div,1.0)
+        self.assertEqual(cfg.servop_aheadtime,20.0)
+        self.assertEqual(cfg.servop_gain,300.0)
+        self.assertEqual(cfg.start,list(REFERENCE_START))
+        self.assertEqual(cfg.target,list(REFERENCE_END))
+
     def test_preflight_and_corruption(self):
         with self.assertRaisesRegex(ValueError,"servo_time_s"):
             cases_for("trapezoidal",Config(servo_time_s=.01))

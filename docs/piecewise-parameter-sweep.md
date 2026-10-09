@@ -40,6 +40,8 @@ python -m unittest discover -s tests -v
 python main.py --experiment trapezoidal --list-cases
 python main.py --experiment double_s --list-cases
 python main.py --experiment ruckig --list-cases
+# Optional scope verification for the actual sweep:
+python main.py --experiment double_s --case 1 --repetitions 1 --config config/piecewise_sweep_rigol_1s.json
 ```
 
 Each CSV is checked analytically at case-selection time and SHA-256
@@ -48,8 +50,9 @@ can be listed by appending `_matched`.
 
 **Rigol methodology:** previous 3.93 s Cubic/Quintic trials had incomplete
 0.5 s/div scope coverage. For comparable power fluctuation across the sweep,
-use one validated *common* scope setting for all nine cases (for example
-1.0 s/div, 12 s NORM window), verify capture coverage, and acknowledge
+use the committed `config/piecewise_sweep_rigol_1s.json` via
+`--config` for **all** sweep cases (1.0 s/div, 12 s NORM window);
+do not modify the normal `config/common.json`. Verify capture coverage and acknowledge
 the lower high-frequency resolution. Do not compare raw NORM signals
 captured with different timebases without alignment and resampling;
 the oscilloscope and robot do not have verified clock alignment, and
