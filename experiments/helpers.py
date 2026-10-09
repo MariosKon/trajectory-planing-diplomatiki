@@ -2,6 +2,10 @@ from itertools import product
 from pathlib import Path
 
 def cases_for(name, cfg, csv_path=None):
+    if name == "quintic_confirmation":
+        from experiments.quintic_confirmation.experiment import build_cases
+        return build_cases(cfg, csv_path)
+
     if name == "servoj_behavior":
         from experiments.servoj_behavior.experiment import build_cases
         return build_cases(cfg, csv_path)
