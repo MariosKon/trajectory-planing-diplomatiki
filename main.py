@@ -46,7 +46,7 @@ def main():
                         help="Print available case numbers and parameters; no motion")
     parser.add_argument("--csv", default=None)
     parser.add_argument(
-        "--payload-phase", choices=["baseline", "changed"],
+        "--payload-phase", choices=["baseline", "full", "empty"],
         help="Physical payload condition; required for real payload experiments",
     )
     parser.add_argument(
@@ -65,7 +65,7 @@ def main():
         if args.repetitions not in (None, 1):
             parser.error("Payload comparison requires exactly one repetition per case")
         if args.execute and args.payload_phase is None:
-            parser.error("Real payload execution requires --payload-phase baseline|changed")
+            parser.error("Real payload execution requires --payload-phase baseline|full|empty")
         repetitions = 1
         phase = args.payload_phase or "baseline"
     else:
@@ -113,9 +113,9 @@ def main():
     )
     print("Results:", result)
     if is_payload and phase == "baseline":
-        print("STOP AFTER BASELINE. Inspect recording/status and safely change "
+        print("STOP AFTER BASELINE. Inspect the recordings and safely change "
               "the physical payload and controller configuration. "
-              "Run again with --payload-phase changed only after verification.")
+              "Start full or empty as a separate run only after verification.")
 
 if __name__ == "__main__":
     main()
