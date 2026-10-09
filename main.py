@@ -39,7 +39,7 @@ def main():
         ],
     )
     parser.add_argument("--repetitions", type=int, default=None,
-                        help="Repetitions per case (default: 3; payload: exactly 1)")
+                        help="Repetitions per case (default: 3; payload: 1)")
     parser.add_argument("--case", type=int, default=None,
                         help="Run only one 1-based parameter combination (e.g. --case 1)")
     parser.add_argument("--list-cases", action="store_true",
@@ -62,11 +62,9 @@ def main():
     args = parser.parse_args()
     is_payload = args.experiment == "payload"
     if is_payload:
-        if args.repetitions not in (None, 1):
-            parser.error("Payload comparison requires exactly one repetition per case")
         if args.execute and args.payload_phase is None:
             parser.error("Real payload execution requires --payload-phase baseline|full|empty")
-        repetitions = 1
+        repetitions = 1 if args.repetitions is None else args.repetitions
         phase = args.payload_phase or "baseline"
     else:
         if args.payload_phase is not None or args.payload_mass_kg is not None:
