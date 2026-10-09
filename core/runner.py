@@ -268,6 +268,8 @@ def execute_motion(robot, cfg, case, manager, run_dir):
             if first_command_perf is not None else None
         ),
         "wait_for_robot_idle_s": wait_duration,
+        "effective_aheadtime": aheadtime,
+        "effective_gain": gain,
         "late_commands": late,
         "maximum_lateness_ms": max_lateness*1000,
         "mean_command_duration_ms": (
@@ -617,6 +619,8 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
                             "wait_for_robot_idle_s",
                             "late_commands",
                             "maximum_lateness_ms",
+                            "effective_aheadtime",
+                            "effective_gain",
                         ):
                             value = result.get("motion", {}).get(field)
                             if value is not None:
