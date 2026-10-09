@@ -48,7 +48,6 @@ def build_cases(config, phase="baseline", physical_payload_mass_kg=None):
             raise ValueError(f"Case {source_case_number} missing for {profile}")
         case = dict(source_cases[source_case_number - 1])
         case.update({
-            "name": f"payload_{profile}_fast",
             "trajectory_profile": profile,
             "reference_case_name": source_cases[source_case_number - 1]["name"],
             "source_case_index": source_case_number,
