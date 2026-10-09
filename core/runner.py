@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import json
 import time
 from dataclasses import asdict
@@ -58,6 +59,10 @@ def execute_motion(robot, cfg, case, manager, run_dir):
         return {"command_count": 1, "response": str(response), "speed_percent": speed, "acceleration_percent": accel, "elapsed_s": time.perf_counter()-started}
 
     if mode == "csv":
+        if "csv_sha256" in case:
+            actual_sha = hashlib.sha256(Path(case["csv_path"]).read_bytes()).hexdigest()
+            if actual_sha != case["csv_sha256"]:
+                raise ValueError("Reference CSV changed after preflight; refusing motion")
         points = load_points(case["csv_path"])
         period = cfg.servo_time_s
         planner = None
