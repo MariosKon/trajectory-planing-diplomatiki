@@ -1,0 +1,13 @@
+{
+  "name": "cubic_T3p93",
+  "mode": "csv",
+  "csv_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\cubic\\points_cubic_T3p93.csv",
+  "csv_sha256": "af1a8cdeda7f67db83dfab044348ed88feee2c85f24cb195a0dd38d61a56f3c1",
+  "duration_s": 3.93,
+  "expected_points": 132,
+  "expected_peak_speed_mm_s": 305.34351145038164,
+  "expected_peak_acceleration_mm_s2": 310.7821999494979,
+  "expected_peak_jerk_mm_s3": 158.15888038142384,
+  "exceeds_movel_fast_speed": false,
+  "global_speed_factor": 100
+}

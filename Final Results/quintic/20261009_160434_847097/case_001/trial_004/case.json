@@ -1,0 +1,13 @@
+{
+  "name": "quintic_T3p93",
+  "mode": "csv",
+  "csv_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\quintic\\points_quintic_T3p93.csv",
+  "csv_sha256": "7a772a76b2e8a77edf5b3ac3faac0682cfd289cbdb05fd4aafcfac4724f7997f",
+  "duration_s": 3.93,
+  "expected_points": 132,
+  "expected_peak_speed_mm_s": 381.6793893129771,
+  "expected_peak_acceleration_mm_s2": 299.05031133364446,
+  "expected_peak_jerk_mm_s3": 790.7944019071192,
+  "exceeds_movel_fast_speed": false,
+  "global_speed_factor": 100
+}

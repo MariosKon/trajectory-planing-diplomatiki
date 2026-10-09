@@ -1,0 +1,81 @@
+{
+  "status": "completed",
+  "case": {
+    "name": "quintic_T2p31",
+    "mode": "csv",
+    "csv_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\quintic\\points_quintic_T2p31.csv",
+    "csv_sha256": "d50981f619d427fbf318aff30ad56022a5d2141806caa60ab5296e9948fd1844",
+    "duration_s": 2.31,
+    "expected_points": 78,
+    "expected_peak_speed_mm_s": 649.3506493506493,
+    "expected_peak_acceleration_mm_s2": 865.5763860341833,
+    "expected_peak_jerk_mm_s3": 3894.0838401118376,
+    "exceeds_movel_fast_speed": true,
+    "global_speed_factor": 100
+  },
+  "rigol_requested_scale_s_per_div": 0.5,
+  "rigol_effective_scale_s_per_div": 0.5,
+  "motion": {
+    "command_count": 78,
+    "planned_trajectory_duration_s": 2.31,
+    "expected_stream_period_s": 2.34,
+    "first_to_last_command_s": 2.3000329000060447,
+    "wait_for_robot_idle_s": 0.7209276000066893,
+    "effective_aheadtime": 20.0,
+    "effective_gain": 300.0,
+    "late_commands": 0,
+    "maximum_lateness_ms": 0.0,
+    "mean_command_duration_ms": 7.150316667647507,
+    "elapsed_s": 3.0650746999890544
+  },
+  "logging": {
+    "robot": {
+      "received_packets": 561,
+      "invalid_packets": 0,
+      "dropped_rows": 0,
+      "error_samples": 0,
+      "collision_samples": 0
+    },
+    "rigol": {
+      "resource": "USB0::0x1AB1::0x0517::DS1ZE264511439::INSTR",
+      "samples": 1200,
+      "error": null,
+      "warnings": [
+        "Power and energy use NORM display data; not motion-only energy. RAW scaling remains unverified."
+      ],
+      "power_trace_source": "NORM_DISPLAY",
+      "power_calibrated": true,
+      "power_data_valid": true
+    },
+    "camera": {
+      "path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\quintic\\20261009_160434_847097\\case_003\\trial_004\\camera.mkv",
+      "format": "matroska",
+      "codec": "copy",
+      "rtsp_transport": "tcp",
+      "timestamp_mode": "host_wallclock_on_packet_arrival",
+      "startup_confirmed_by": "ffmpeg_frame_progress",
+      "ffmpeg_log": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\quintic\\20261009_160434_847097\\case_003\\trial_004\\ffmpeg_camera.log",
+      "ffmpeg_progress": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\quintic\\20261009_160434_847097\\case_003\\trial_004\\ffmpeg_camera_progress.txt",
+      "frame_count": 386,
+      "video_validation": {
+        "validation": "ffmpeg_decoded",
+        "decoded_frames": 386,
+        "empty_h264_nals_removed": 14,
+        "original_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\quintic\\20261009_160434_847097\\case_003\\trial_004\\camera_original.mkv",
+        "note": "Video timestamps are host/RTSP estimates, not synchronized capture times."
+      },
+      "received_frames": null,
+      "encoded_fps": null,
+      "file_size_bytes": 4031228,
+      "host_start_perf_s": 105287.3548971,
+      "host_end_perf_s": 105301.4915781,
+      "host_start_utc": "2026-10-09T13:09:51.678114+00:00",
+      "host_end_utc": "2026-10-09T13:10:05.815099+00:00",
+      "startup_elapsed_s": 2.9610730999993393,
+      "recorded_wall_duration_s": 14.136681000003591,
+      "note": "RTSP/host packet timestamps are not camera exposure times, and are not synchronized to robot or Rigol measurements. Check video_validation for decodability and repair status, and preserve ffmpeg_camera.log for source diagnostics.",
+      "error": null
+    }
+  },
+  "error_ids": "0,{[]},GetErrorID();"
+}
