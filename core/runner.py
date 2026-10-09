@@ -2,7 +2,7 @@ import csv
 import hashlib
 import json
 import time
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import datetime
 from pathlib import Path
 
@@ -45,6 +45,27 @@ def effective_servo_parameters(cfg, case, command_mode):
     if not 200.0 <= gain <= 1000.0:
         raise ValueError("Servo gain must be in [200, 1000]")
     return aheadtime, gain
+
+
+def capture_config_for_case(cfg, case):
+    """Widen Rigol for fixed-time polynomials, without changing global config.
+
+    Keep 1 s/div across all 3 durations for comparable NORM display traces.
+    Scope time is trigger-relative, so this does not itself synchronize
+    physical motion and scope samples.
+    """
+    if (case.get("mode") != "csv" or "duration_s" not in case
+            or not cfg.rigol_resource
+            or cfg.rigol_horizontal_scale_s_per_div is None):
+        return cfg
+    required_span_s = (
+        float(case["duration_s"]) + cfg.rigol_pre_delay_s
+        + cfg.robot_logger_post_delay_s + 1.5
+    )
+    scale = max(1.0, required_span_s / 12.0)
+    if cfg.rigol_horizontal_scale_s_per_div >= scale:
+        return cfg
+    return replace(cfg, rigol_horizontal_scale_s_per_div=scale)
 
 
 def execute_motion(robot, cfg, case, manager, run_dir):
@@ -142,6 +163,8 @@ def execute_motion(robot, cfg, case, manager, run_dir):
     ] + [f"position_{i}" for i in range(1,7)]
 
     count = 0
+    first_command_perf = None
+    last_command_perf = None
     with (run_dir/"commands.csv").open(
         "w", newline="", encoding="utf-8"
     ) as handle:
@@ -188,8 +211,16 @@ def execute_motion(robot, cfg, case, manager, run_dir):
                 raise ValueError(f"Unsupported mode: {command_mode}")
 
             check_response(response)
-            duration = time.perf_counter()-command_started
+            command_completed = time.perf_counter()
+            duration = command_completed-command_started
             durations.append(duration)
+            if first_command_perf is None:
+                first_command_perf = command_completed
+                manager.event(
+                    "SERVO_FIRST_COMMAND_SENT",
+                    f"mode={command_mode};period_s={period:.6f}",
+                )
+            last_command_perf = command_completed
 
             row = {
                 "sample": count+1,
@@ -213,12 +244,30 @@ def execute_motion(robot, cfg, case, manager, run_dir):
             if planner is not None and finished:
                 break
 
+    if last_command_perf is not None:
+        manager.event(
+            "SERVO_LAST_COMMAND_SENT",
+            f"count={count};scheduled_duration_s={(count-1)*period:.6f}",
+        )
     remaining = started+count*period-time.perf_counter()
     if remaining > 0:
         time.sleep(remaining)
+    manager.event("SERVO_STREAM_PERIOD_END", f"count={count}")
+    wait_started = time.perf_counter()
     wait_for_motion(robot, cfg.motion_timeout_s)
+    wait_duration = time.perf_counter()-wait_started
+    manager.event("SERVO_ROBOT_IDLE", f"wait_s={wait_duration:.6f}")
     return {
         "command_count": count,
+        "planned_trajectory_duration_s": (
+            (count-1)*period if planner is None else None
+        ),
+        "expected_stream_period_s": count*period,
+        "first_to_last_command_s": (
+            last_command_perf-first_command_perf
+            if first_command_perf is not None else None
+        ),
+        "wait_for_robot_idle_s": wait_duration,
         "late_commands": late,
         "maximum_lateness_ms": max_lateness*1000,
         "mean_command_duration_ms": (
@@ -241,8 +290,13 @@ def run_trial(cfg, case, run_dir, robot=None):
         from dobot_sdk import DobotRobot
         robot = DobotRobot(cfg.robot_ip)
         robot.Connect()
-    manager = LoggingManager(cfg, run_dir)
-    result = {"status": "failed", "case": case}
+    capture_cfg = capture_config_for_case(cfg, case)
+    manager = LoggingManager(capture_cfg, run_dir)
+    result = {
+        "status": "failed", "case": case,
+        "rigol_requested_scale_s_per_div": cfg.rigol_horizontal_scale_s_per_div,
+        "rigol_effective_scale_s_per_div": capture_cfg.rigol_horizontal_scale_s_per_div,
+    }
     connected = robot is not None
     success = False
 
@@ -291,6 +345,13 @@ def run_trial(cfg, case, run_dir, robot=None):
             print(
                 f"[ROBOT] Global speed factor set to "
                 "100% (explicit case settings)", flush=True
+            )
+        if manager.rigol is not None:
+            print(
+                f"[RIGOL] Effective timebase: "
+                f"{capture_cfg.rigol_horizontal_scale_s_per_div} s/div "
+                f"(requested: {cfg.rigol_horizontal_scale_s_per_div})",
+                flush=True,
             )
         print("[LOGGING] Starting robot, Rigol and camera loggers", flush=True)
         manager.start()
@@ -546,6 +607,20 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
                         log("    [RUNNING] Robot and acquisition sequence")
                         result = run_trial(cfg, case, folder, robot=robot)
                         record["status"] = result["status"]
+                        record["rigol_effective_scale_s_per_div"] = (
+                            result.get("rigol_effective_scale_s_per_div")
+                        )
+                        for field in (
+                            "planned_trajectory_duration_s",
+                            "expected_stream_period_s",
+                            "first_to_last_command_s",
+                            "wait_for_robot_idle_s",
+                            "late_commands",
+                            "maximum_lateness_ms",
+                        ):
+                            value = result.get("motion", {}).get(field)
+                            if value is not None:
+                                record[field] = value
 
                         if record["status"] not in ("completed", "partial"):
                             abort = True
