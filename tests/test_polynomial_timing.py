@@ -16,30 +16,40 @@ from core.runner import capture_config_for_case, execute_motion
 
 
 class PolynomialTimingTests(unittest.TestCase):
-    def test_fixed_time_scope_uses_same_12_second_window_for_all_cases(self):
+    def test_fixed_time_scope_keeps_configured_six_second_window_all_cases(self):
         cfg = Config(
             rigol_resource="FAKE",
             rigol_horizontal_scale_s_per_div=0.5,
         )
-        for duration in (3.93, 2.79, 2.31):
-            with self.subTest(duration=duration):
-                trial = capture_config_for_case(
-                    cfg, {"mode": "csv", "duration_s": duration}
-                )
-                self.assertEqual(trial.rigol_horizontal_scale_s_per_div, 1.0)
-                self.assertEqual(cfg.rigol_horizontal_scale_s_per_div, 0.5)
-                self.assertEqual(trial.servop_gain, cfg.servop_gain)
+        for profile in ("cubic", "quintic"):
+            for duration in (3.93, 2.79, 2.31):
+                with self.subTest(profile=profile, duration=duration):
+                    trial = capture_config_for_case(
+                        cfg, {
+                            "mode": "csv",
+                            "duration_s": duration,
+                            "name": f"{profile}_{duration}",
+                        }
+                    )
+                    self.assertIs(trial, cfg)
+                    self.assertEqual(trial.rigol_horizontal_scale_s_per_div, 0.5)
+                    self.assertEqual(trial.servop_gain, cfg.servop_gain)
 
-    def test_custom_long_scope_or_unrelated_experiment_not_overridden(self):
-        cfg = Config(rigol_resource="FAKE", rigol_horizontal_scale_s_per_div=2.0)
-        self.assertIs(capture_config_for_case(
-            cfg, {"mode": "csv", "duration_s": 2.31}
-        ), cfg)
-        cfg.rigol_horizontal_scale_s_per_div = 0.5
-        self.assertIs(capture_config_for_case(cfg, {"mode": "movel"}), cfg)
-        self.assertIs(capture_config_for_case(
-            cfg, {"mode": "csv", "csv_path": "manual.csv"}
-        ), cfg)
+    def test_scope_is_config_driven_in_other_experiments(self):
+        for scale in (0.5, 1.0, 2.0):
+            cfg = Config(
+                rigol_resource="FAKE",
+                rigol_horizontal_scale_s_per_div=scale,
+            )
+            for case in (
+                {"mode": "csv", "duration_s": 2.31},
+                {"mode": "csv", "duration_s": 3.93},
+                {"mode": "movel"},
+                {"mode": "csv", "csv_path": "manual.csv"},
+            ):
+                with self.subTest(scale=scale, case=case):
+                    self.assertIs(capture_config_for_case(cfg, case), cfg)
+                    self.assertEqual(cfg.rigol_horizontal_scale_s_per_div, scale)
 
     def test_servo_stream_events_and_idle_wait_are_separately_reported(self):
         with tempfile.TemporaryDirectory() as tmp:
