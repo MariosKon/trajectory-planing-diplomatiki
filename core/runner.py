@@ -98,6 +98,8 @@ def execute_motion(robot, cfg, case, manager, run_dir):
             if actual_sha != case["csv_sha256"]:
                 raise ValueError("Reference CSV changed after preflight; refusing motion")
         points = load_points(case["csv_path"])
+        if "expected_points" in case and len(points) != case["expected_points"]:
+            raise ValueError("Fixed-time trajectory point count changed")
         period = cfg.servo_time_s
         planner = None
     elif mode == "ruckig":
@@ -125,7 +127,9 @@ def execute_motion(robot, cfg, case, manager, run_dir):
         aheadtime, gain = effective_servo_parameters(cfg, case, points[0].mode)
         manager.event(
             "MOTION_PARAMETERS",
-            f"servo_t_s={period};aheadtime={aheadtime};gain={gain}",
+            f"servo_t_s={period};aheadtime={aheadtime};gain={gain};"
+            f"planned_duration_s={case.get('duration_s')};"
+            f"global_speed={case.get('global_speed_factor', cfg.slow_speed)}",
         )
     else:
         # Online Ruckig streams ServoP commands.
@@ -224,6 +228,13 @@ def execute_motion(robot, cfg, case, manager, run_dir):
     }
 
 def run_trial(cfg, case, run_dir, robot=None):
+    # Reject modified fixed-time reference before connecting/moving the robot.
+    if case.get("mode") == "csv" and "csv_sha256" in case:
+        actual_sha = hashlib.sha256(
+            Path(case["csv_path"]).read_bytes()
+        ).hexdigest()
+        if actual_sha != case["csv_sha256"]:
+            raise ValueError("Reference CSV changed after case selection")
     from dobot_sdk import CoordinateType
     owns_robot = robot is None
     if owns_robot:
@@ -422,6 +433,8 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
             ("payload_kg", "Payload kg"),
             ("csv_path", "Trajectory CSV"),
             ("minimum_duration_s", "Min duration s"),
+            ("duration_s", "Planned duration s"),
+            ("expected_peak_speed_mm_s", "Planned peak TCP mm/s"),
             ("aheadtime", "Aheadtime"),
             ("gain", "Gain"),
             ("global_speed_factor", "Global speed %"),
@@ -506,7 +519,14 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
                     "global_trial": global_index,
                     "status": "planned",
                 }
-                for key in ("aheadtime", "gain", "global_speed_factor"):
+                for key in (
+                    "aheadtime", "gain", "global_speed_factor",
+                    "duration_s", "expected_points",
+                    "expected_peak_speed_mm_s",
+                    "expected_peak_acceleration_mm_s2",
+                    "expected_peak_jerk_mm_s3",
+                    "exceeds_movel_fast_speed",
+                ):
                     if key in case:
                         record[key] = case[key]
                 if case.get("mode") in ("movel", "movej"):
@@ -517,6 +537,10 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
                     )
                     record["command_v_percent"] = 100
 
+                if case.get("exceeds_movel_fast_speed"):
+                    log("    [CAUTION] Planned peak TCP speed exceeds the "
+                        "fastest measured MoveL plateau (~470.5 mm/s). "
+                        "Physical motion requires explicit safety review.")
                 if execute:
                     try:
                         log("    [RUNNING] Robot and acquisition sequence")
