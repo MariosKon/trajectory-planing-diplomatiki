@@ -137,19 +137,25 @@ def repair_recording(path: Path, ffmpeg_bin: str = "ffmpeg") -> dict:
                  "-c:v", "copy", "-bsf:v",
                  "setts=pts=max(PTS\\,PREV_OUTPTS+1):dts=max(DTS\\,PREV_OUTDTS+1)",
                  "-f", "matroska", str(repaired)],
-                capture_output=True, text=True,
+                capture_output=True, text=True, timeout=120,
             )
             if result.returncode:
                 raise RuntimeError("FFmpeg video remux failed: " + result.stderr[-900:])
         candidate = repaired if removed else path
         decoded = subprocess.run(
             [ffmpeg_bin, "-nostdin", "-hide_banner", "-v", "error",
-             "-xerror", "-i", str(candidate), "-map", "0:v:0",
+             "-xerror", "-progress", "pipe:1", "-i", str(candidate), "-map", "0:v:0",
              "-f", "null", "-"],
-            capture_output=True, text=True,
+            capture_output=True, text=True, timeout=120,
         )
         if decoded.returncode:
             raise RuntimeError("Recorded video decode failed: " + decoded.stderr[-900:])
+        # FFmpeg can exit successfully without emitting a decoded frame.
+        counts = [int(line[6:].strip()) for line in decoded.stdout.splitlines()
+                  if line.startswith("frame=") and line[6:].strip().isdigit()]
+        decoded_frames = max(counts, default=0)
+        if decoded_frames < 1:
+            raise RuntimeError("Video decode produced zero frames")
         if removed:
             original = path.with_name("camera_original.mkv")
             if original.exists():
@@ -158,6 +164,7 @@ def repair_recording(path: Path, ffmpeg_bin: str = "ffmpeg") -> dict:
             repaired.replace(path)
         return {
             "validation": "ffmpeg_decoded",
+            "decoded_frames": decoded_frames,
             "empty_h264_nals_removed": removed,
             "original_path": str(path.with_name("camera_original.mkv")) if removed else None,
             "note": "Video timestamps are host/RTSP estimates, not synchronized capture times.",
