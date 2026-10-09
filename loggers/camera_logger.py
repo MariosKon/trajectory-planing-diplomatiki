@@ -1,128 +1,214 @@
+"""RTSP capture using FFmpeg stream copy (no OpenCV decode/re-encode).
+
+Each trial has its own Matroska recording, FFmpeg log, progress report,
+and JSON metadata. The existing LoggingManager start()/stop() API remains.
+"""
 from __future__ import annotations
-import csv
+
 import json
-import queue
-import socket
-import struct
-import threading
+import shutil
+import subprocess
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-try:
-    import numpy as np
-except ImportError:
-    np = None
-
-try:
-    import pyvisa
-except ImportError:
-    pyvisa = None
-
-try:
-    import cv2
-except ImportError:
-    cv2 = None
-
-PACKET_SIZE = 1440
-FEEDBACK_PORT = 30004
-MAGIC = 0x0123456789ABCDEF
-TIMESTAMP_DIFFERENCE_TOLERANCE_MS = 1.0
 
 def utc_now():
     return datetime.now(timezone.utc).isoformat()
 
-class RTSPVideoRecorder:
-    """Capture an RTSP stream into a local MP4 file while the robot run is active."""
 
-    def __init__(self, rtsp_url: str, run_dir: str | Path, fps: float = 30.0):
-        if cv2 is None:
-            raise RuntimeError("OpenCV is required for RTSP video capture. Install opencv-python-headless.")
+class RTSPVideoRecorder:
+    """Record an RTSP video stream as received, without synthetic frames."""
+
+    def __init__(
+        self,
+        rtsp_url: str,
+        run_dir: str | Path,
+        fps: float = 30.0,
+        ffmpeg_bin: str = "ffmpeg",
+        startup_timeout_s: float = 5.0,
+        stop_timeout_s: float = 8.0,
+    ):
+        # The fps argument is retained for interface compatibility; source
+        # timestamps, NOT a hard-coded output frame rate, govern the video.
+        self.rtsp_url = rtsp_url
         self.run_dir = Path(run_dir)
         self.run_dir.mkdir(parents=True, exist_ok=True)
-        self.rtsp_url = rtsp_url
-        self.fps = fps
-        self.output_path = self.run_dir / "camera.mp4"
-        self.capture: Any | None = None
-        self.writer: Any | None = None
-        self.thread: threading.Thread | None = None
-        self.stop_event = threading.Event()
-        self.frame_count = 0
-        self.received_frames = 0
-        self.recording_start_s: float | None = None
-        self.recording_end_s: float | None = None
-        self.error: str | None = None
+        self.output_path = self.run_dir / "camera.mkv"
+        self.log_path = self.run_dir / "ffmpeg_camera.log"
+        self.progress_path = self.run_dir / "ffmpeg_camera_progress.txt"
+        self.metadata_path = self.run_dir / "camera_metadata.json"
+        self.ffmpeg_bin = ffmpeg_bin
+        self.startup_timeout_s = startup_timeout_s
+        self.stop_timeout_s = stop_timeout_s
+        self.process = None
+        self._log_handle = None
+        self.recording_start_s = None
+        self.recording_end_s = None
+        self.start_utc = None
+        self.end_utc = None
+        self.startup_elapsed_s = None
+        self.error = None
+        self._stopped = False
+
+    def _command(self, executable: str) -> list[str]:
+        return [
+            executable,
+            "-hide_banner",
+            "-loglevel", "warning",
+            "-nostats",
+            "-stats_period", "1",
+            "-progress", str(self.progress_path),
+            "-y",
+            "-rtsp_transport", "tcp",
+            "-i", self.rtsp_url,
+            "-map", "0:v:0",
+            "-an",
+            "-c:v", "copy",
+            "-flush_packets", "1",
+            "-f", "matroska",
+            str(self.output_path),
+        ]
 
     def start(self) -> None:
-        self.capture = cv2.VideoCapture(self.rtsp_url)
-        if not self.capture.isOpened():
-            raise RuntimeError(f"Unable to open RTSP stream: {self.rtsp_url}")
-
-        width = int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        if width <= 0 or height <= 0:
-            raise RuntimeError(f"RTSP stream did not provide a valid frame size: {self.rtsp_url}")
-
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        self.writer = cv2.VideoWriter(str(self.output_path), fourcc, self.fps, (width, height))
-        if not self.writer.isOpened():
-            raise RuntimeError(f"Unable to create video writer for {self.output_path}")
-
-        self.thread = threading.Thread(target=self._record_loop, name="rtsp-recorder", daemon=True)
-        self.thread.start()
-
-    def _record_loop(self) -> None:
-        # VideoWriter uses constant-frame-rate timestamps, not RTSP arrival
-        # timestamps. Repeat the last received frame where necessary to keep
-        # playback duration close to real elapsed acquisition time.
-        previous_frame = None
-        started = time.perf_counter()
-        self.recording_start_s = started
+        if self.process is not None:
+            raise RuntimeError("Camera recorder is already started")
+        executable = shutil.which(self.ffmpeg_bin)
+        if executable is None:
+            raise RuntimeError(
+                "FFmpeg executable not found. Install FFmpeg and add ffmpeg to PATH."
+            )
+        self._log_handle = self.log_path.open("wb")
+        self.start_utc = utc_now()
+        self.recording_start_s = time.perf_counter()
         try:
-            while not self.stop_event.is_set():
-                ok, frame = self.capture.read() if self.capture is not None else (False, None)
-                if not ok or frame is None:
-                    self.error = "RTSP stream ended or failed while recording"
+            # Keep stdin available so 'q' can finalize the container at stop.
+            # stderr is a file to prevent PIPE deadlocks and preserve diagnostics.
+            self.process = subprocess.Popen(
+                self._command(executable),
+                stdin=subprocess.PIPE,
+                stdout=subprocess.DEVNULL,
+                stderr=self._log_handle,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+            deadline = time.monotonic() + self.startup_timeout_s
+            while True:
+                if self.process.poll() is not None:
+                    raise RuntimeError(
+                        f"FFmpeg exited during camera startup (code "
+                        f"{self.process.returncode}); see {self.log_path}"
+                    )
+                if self.output_path.exists() and self.output_path.stat().st_size >= 1024:
                     break
-                self.received_frames += 1
-                elapsed = max(0.0, time.perf_counter() - started)
-                expected_count = max(1, int(elapsed * self.fps) + 1)
-                # Back-fill video timestamps with the previously held frame.
-                # This preserves wall-clock playback without inventing
-                # additional camera measurements.
-                if self.writer is not None:
-                    while self.frame_count < expected_count - 1 and previous_frame is not None:
-                        self.writer.write(previous_frame)
-                        self.frame_count += 1
-                    self.writer.write(frame)
-                    self.frame_count += 1
-                previous_frame = frame
-        finally:
-            ended = time.perf_counter()
-            self.recording_end_s = ended
-            if self.writer is not None and previous_frame is not None:
-                expected_count = int((ended - started) * self.fps) + 1
-                while self.frame_count < expected_count:
-                    self.writer.write(previous_frame)
-                    self.frame_count += 1
-            if self.writer is not None:
-                self.writer.release()
-            if self.capture is not None:
-                self.capture.release()
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(
+                        f"No video data from RTSP camera within "
+                        f"{self.startup_timeout_s:g}s; see {self.log_path}"
+                    )
+                time.sleep(0.05)
+            self.startup_elapsed_s = time.perf_counter() - self.recording_start_s
+        except Exception:
+            # A failed startup must not leave an FFmpeg child writing behind
+            # while LoggingManager continues robot/Rigol acquisition.
+            self._close_process()
+            raise
+
+    def _close_process(self) -> tuple[int | None, bool]:
+        forced = False
+        returncode = None
+        process = self.process
+        if process is not None:
+            if process.poll() is None:
+                try:
+                    if process.stdin is not None:
+                        process.stdin.write(b"q\n")
+                        process.stdin.flush()
+                except (OSError, ValueError, BrokenPipeError):
+                    pass
+                try:
+                    returncode = process.wait(timeout=self.stop_timeout_s)
+                except subprocess.TimeoutExpired:
+                    forced = True
+                    process.terminate()
+                    try:
+                        returncode = process.wait(timeout=2.0)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        returncode = process.wait(timeout=2.0)
+            else:
+                returncode = process.returncode
+            if process.stdin is not None:
+                process.stdin.close()
+        if self._log_handle is not None:
+            self._log_handle.close()
+            self._log_handle = None
+        self.process = None
+        return returncode, forced
+
+    def _progress(self) -> dict[str, str]:
+        report = {}
+        if self.progress_path.exists():
+            for line in self.progress_path.read_text(
+                encoding="utf-8", errors="replace"
+            ).splitlines():
+                if "=" in line:
+                    key, value = line.split("=", 1)
+                    report[key] = value
+        return report
 
     def stop(self) -> dict:
-        self.stop_event.set()
-        if self.thread is not None:
-            self.thread.join(timeout=5.0)
-        return {
+        if self._stopped:
+            raise RuntimeError("Camera recorder already stopped")
+        self._stopped = True
+        errors = []
+        returncode = None
+        forced = False
+        try:
+            returncode, forced = self._close_process()
+        except Exception as exc:
+            errors.append(f"FFmpeg cleanup error: {exc!r}")
+        self.recording_end_s = time.perf_counter()
+        self.end_utc = utc_now()
+        if forced:
+            errors.append("FFmpeg did not stop gracefully; process terminated")
+        if returncode not in (None, 0):
+            errors.append(f"FFmpeg exited with code {returncode}; see {self.log_path}")
+        size = self.output_path.stat().st_size if self.output_path.exists() else 0
+        if size < 1024:
+            errors.append("Camera recording is missing or empty")
+        progress = self._progress()
+        frame_str = progress.get("frame", "")
+        try:
+            frames = int(frame_str)
+        except ValueError:
+            frames = None
+        if frames == 0:
+            errors.append("FFmpeg reported zero video frames")
+        self.error = "; ".join(errors) if errors else None
+        result = {
             "path": str(self.output_path),
-            "frame_count": self.frame_count,
-            "received_frames": self.received_frames,
-            "encoded_fps": self.fps,
+            "format": "matroska",
+            "codec": "copy",
+            "rtsp_transport": "tcp",
+            "ffmpeg_log": str(self.log_path),
+            "ffmpeg_progress": str(self.progress_path),
+            "frame_count": frames,
+            "received_frames": None,
+            "encoded_fps": None,
+            "file_size_bytes": size,
+            "host_start_perf_s": self.recording_start_s,
+            "host_end_perf_s": self.recording_end_s,
+            "host_start_utc": self.start_utc,
+            "host_end_utc": self.end_utc,
+            "startup_elapsed_s": self.startup_elapsed_s,
             "recorded_wall_duration_s": (
                 self.recording_end_s - self.recording_start_s
-                if self.recording_start_s is not None and self.recording_end_s is not None
-                else None
+                if self.recording_start_s is not None else None
             ),
+            "note": "Host timestamps are not synchronized to camera frame timestamps.",
             "error": self.error,
         }
+        self.metadata_path.write_text(
+            json.dumps(result, indent=2), encoding="utf-8"
+        )
+        return result
