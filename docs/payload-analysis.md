@@ -7,9 +7,11 @@
 Compare the recorded Rigol electrical-power traces and robot tracking for
 the **same six trajectories** under three manually established physical
 payload conditions: `baseline` (as-is), `full`, and `empty`.
-Execute **one repetition of each algorithm per condition**:
-six trials per load condition, **18 trials total**. Every phase is launched
-independently. No software operation changes the contents or attachment
+By default, run **one repetition of each algorithm per condition**:
+six trials per load condition, **18 trials total**. After validating the
+recordings and physical behavior, pass `--repetitions 5` for five
+repetitions per algorithm (**30 trials per condition, 90 total**).
+Every phase is launched independently. No software operation changes the contents or attachment
 of the physical payload.
 
 For a liquid container, define full and empty based on the *same* vessel,
@@ -75,6 +77,21 @@ The process exits after six trials. Review `trial_summary.csv`,
 If a movement fails, do not proceed. If a recording is `partial`, inspect
 its acquisition validity before using its power statistics.
 
+For final measurements after each payload setup has passed a supervised
+single-repetition check, add `--repetitions 5` to **each** phase's
+command. For example, the final baseline run is:
+
+```powershell
+python main.py --experiment payload --payload-phase baseline --repetitions 5 --execute
+```
+
+Repeat with `--payload-phase full` and `--payload-phase empty`
+in separately supervised invocations. The existing runner groups five
+repetitions of each of the six selected trajectories and saves individual
+trial folders; it stops a batch on a failed movement. Prior pilot
+measurements are separate and not automatically included in the
+five-repetition final analysis.
+
 Safely stop motion, establish the **full** physical condition and verify
 tool mass, mounting, center of mass, limits and clearances again.
 Only then start the next command:
@@ -124,7 +141,8 @@ The three invocations save into independent directories:
 - `results/payload/empty/<timestamp>/`
 
 Each uses the standard `case_001` through `case_006` and
-`trial_001` folders, `case.json`, robot feedback and
+`trial_001` through `trial_00N` folders (N is the requested number of
+repetitions), `case.json`, robot feedback and
 `commands.csv` where applicable, Rigol power trace, scope screenshot,
 camera recording, `trial_summary.csv`, and aggregate JSON.
 The aggregate CSV additionally identifies `trajectory_profile`,
@@ -139,5 +157,7 @@ compare TCP position error, actual motion duration and joint velocities,
 and inspect the footage. Do not treat the existing scope-wide
 `rigol_acquisition_energy_J` as synchronized motion-only energy,
 or infer physical vibration directly from power-trace variability.
-A single repetition per condition cannot estimate test-to-test variability;
-repeat only if the initial signal provides a clear, valid comparison.
+A single repetition per condition cannot estimate test-to-test variability.
+With five repetitions, calculate per-algorithm means and standard deviations
+for each load, then compare condition differences while acknowledging that
+a small sample does not establish statistical certainty.
