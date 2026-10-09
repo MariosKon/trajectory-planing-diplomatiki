@@ -39,11 +39,14 @@ Cubic and Quintic expose three fixed-time reference cases each by default; `--cs
 
 ## Three-condition payload analysis
 
-One repetition each of the fastest previously tested MoveL, Cubic,
-Quintic, Double-S, Ruckig and Trapezoidal case is collected under
-**three physical conditions: baseline (as-is), full, empty**.
-That is six trials per condition, 18 total. Each command runs exactly
-one condition; a second/third condition will never start automatically.
+The fastest previously tested MoveL, Cubic, Quintic, Double-S,
+Ruckig and Trapezoidal cases run under **three physical conditions:
+baseline (as-is), full, empty**. By default there is one repetition
+per trajectory (6 runs/condition; 18 total). Pass `--repetitions 5` to
+collect five trials of each trajectory (30 runs/condition; 90 total)
+after a successful supervised single-repetition validation. Each
+invocation runs only one payload condition; the next load never starts
+automatically.
 
 ```powershell
 python main.py --experiment payload --list-cases
@@ -54,6 +57,10 @@ python main.py --experiment payload --payload-phase baseline --execute
 python main.py --experiment payload --payload-phase full --execute
 # STOP again. Change/verify to the empty condition.
 python main.py --experiment payload --payload-phase empty --execute
+# Once all three payload setups have been safely checked, rerun separately:
+python main.py --experiment payload --payload-phase baseline --repetitions 5 --execute
+python main.py --experiment payload --payload-phase full --repetitions 5 --execute
+python main.py --experiment payload --payload-phase empty --repetitions 5 --execute
 ```
 
 To record a measured load without changing the robot's controller payload
