@@ -88,9 +88,22 @@ For real hardware, first inspect the actual exported CSVs, assess the planned pe
 python main.py --experiment cubic --case 1 --repetitions 1 --execute
 ```
 
-Start with case 1 and stop if tracking or physical behavior is unacceptable. The 6-second Rigol capture is too tight for the longest profile; configure at least 1 s/div (12 seconds) for the offline study. Rigol full-window energy is **not** verified motion-only energy.
+Start with case 1 and stop if tracking or physical behavior is unacceptable. Fixed-time polynomial cases now **automatically widen the Rigol from 0.5 to at least 1.0 s/div (12-second display span)** without editing the global MoveL configuration. The actual instrument setting is logged in `rigol_metadata.json` and `result.json`. This wider display avoids the previous 6-second span being shorter than the host recording window; it **does not** synchronize the trigger-relative Rigol axis with robot timestamps or guarantee motion-only energy. It also reduces the display waveform's effective sampling density (1200 points across 12 s). Rigol full-window energy is **not** verified motion-only energy.
 
 Once validated, the intended final matrix is 3 cases × 5 repetitions × 2 polynomial profiles = **30 real executions**. No changes are made to trapezoidal, Double-S, Ruckig, or the dedicated ServoP/ServoJ tracking studies by this branch.
+
+### Timing and trial-status diagnostics
+
+The robot's total `MOTION_START` to `MOTION_END` time includes the streamed CSV commands, the final ServoP period and the SDK's `wait_for_motion` idle confirmation. **It is not the nominal polynomial duration.** To avoid conflating these, every polynomial trial now records:
+
+- `planned_trajectory_duration_s = (N - 1)*0.030` and `expected_stream_period_s = N*0.030` for the CSV itself.
+- `first_to_last_command_s`, `wait_for_robot_idle_s`, `effective_gain` and `effective_aheadtime` in `result.json` and the trial summary.
+- `SERVO_FIRST_COMMAND_SENT`, `SERVO_LAST_COMMAND_SENT`, `SERVO_STREAM_PERIOD_END` and `SERVO_ROBOT_IDLE` in `events.csv`.
+- `command_stream_first_to_last_s`, `post_stream_idle_wait_s`, and `tcp_travel_1pct_99pct_s` in `metrics.json` and the trial summary. The physical 1–99% time is calculated from the recorded 3D TCP actual positions projected onto the CSV's commanded start-to-target translation, not from the end-of-command event.
+
+The additional time seen in the first Cubic tests cannot be identified purely as tracking lag; the new timestamps distinguish command pacing, the fixed final period and the wait until robot-idle confirmation. `partial` means robot motion completed but at least one acquisition component failed, and is **counted separately** from `failed` in `experiment_summary.json`. Existing old results are not retroactively rewritten.
+
+The main branch's selected ServoP defaults, **aheadtime=20 and gain=300**, are retained by this study (unless explicitly overridden per case). ServoJ and historical gain-sweep cases keep their distinct defaults. Verify the effective values in `commands.csv` and `trial_summary.csv` before evaluating smoothness.
 
 ## Current measurement configuration
 
