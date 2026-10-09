@@ -89,6 +89,20 @@ class SweepTests(unittest.TestCase):
             self.assertEqual(len(cases),3)
             self.assertEqual([c["duration_s"] for c in cases],[3.93,2.79,2.31])
 
+    def test_matlab_csv_reader_preserves_keyword_header(self):
+        generator=(Path(__file__).resolve().parents[1]/
+                   "experiments"/"piecewise_sweep"/"generate_piecewise_sweep.m")
+        source=generator.read_text(encoding="utf-8")
+        # MATLAB's default readtable renames 'case' (reserved keyword).
+        self.assertIn(
+            "savedMatrix=readtable(matrixPath,'VariableNamingRule','preserve');",
+            source)
+        self.assertIn("savedMatrix{:,1}", source)
+        self.assertNotIn("savedMatrix.case", source)
+        self.assertIn(
+            "imported=readtable(outputPath,'VariableNamingRule','preserve');",
+            source)
+
     def test_study_rigol_configuration(self):
         root=Path(__file__).resolve().parents[1]
         cfg=Config.load(root/"config"/"piecewise_sweep_rigol_1s.json")
