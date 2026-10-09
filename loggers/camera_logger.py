@@ -26,7 +26,7 @@ class RTSPVideoRecorder:
         run_dir: str | Path,
         fps: float = 30.0,
         ffmpeg_bin: str = "ffmpeg",
-        startup_timeout_s: float = 5.0,
+        startup_timeout_s: float = 20.0,
         stop_timeout_s: float = 8.0,
     ):
         # The fps argument is retained for interface compatibility; source
@@ -55,17 +55,23 @@ class RTSPVideoRecorder:
         return [
             executable,
             "-hide_banner",
-            "-loglevel", "warning",
+            "-loglevel", "info",
             "-nostats",
             "-stats_period", "1",
             "-progress", str(self.progress_path),
             "-y",
             "-rtsp_transport", "tcp",
+            # Generate missing packet PTS where DTS is available. Some
+            # cameras supply neither usable PTS nor DTS: assign timestamps
+            # on reception in that case (host arrival time, not capture time).
+            "-fflags", "+genpts",
+            "-use_wallclock_as_timestamps", "1",
             "-i", self.rtsp_url,
             "-map", "0:v:0",
             "-an",
             "-c:v", "copy",
             "-flush_packets", "1",
+            "-avoid_negative_ts", "make_zero",
             "-f", "matroska",
             str(self.output_path),
         ]
@@ -98,11 +104,14 @@ class RTSPVideoRecorder:
                         f"FFmpeg exited during camera startup (code "
                         f"{self.process.returncode}); see {self.log_path}"
                     )
-                if self.output_path.exists() and self.output_path.stat().st_size >= 1024:
+                # Container headers can exceed 1024 bytes before a single
+                # usable video frame arrives. Require FFmpeg's frame progress
+                # instead of considering an existing file as proof of video.
+                if self._progress_frames() > 0:
                     break
                 if time.monotonic() >= deadline:
                     raise TimeoutError(
-                        f"No video data from RTSP camera within "
+                        f"No recorded video frame reported by FFmpeg within "
                         f"{self.startup_timeout_s:g}s; see {self.log_path}"
                     )
                 time.sleep(0.05)
@@ -156,6 +165,13 @@ class RTSPVideoRecorder:
                     report[key] = value
         return report
 
+    def _progress_frames(self) -> int:
+        progress = self._progress()
+        try:
+            return max(0, int(progress.get("frame", "0")))
+        except (TypeError, ValueError):
+            return 0
+
     def stop(self) -> dict:
         if self._stopped:
             raise RuntimeError("Camera recorder already stopped")
@@ -190,6 +206,8 @@ class RTSPVideoRecorder:
             "format": "matroska",
             "codec": "copy",
             "rtsp_transport": "tcp",
+            "timestamp_mode": "host_wallclock_on_packet_arrival",
+            "startup_confirmed_by": "ffmpeg_frame_progress",
             "ffmpeg_log": str(self.log_path),
             "ffmpeg_progress": str(self.progress_path),
             "frame_count": frames,
@@ -205,7 +223,12 @@ class RTSPVideoRecorder:
                 self.recording_end_s - self.recording_start_s
                 if self.recording_start_s is not None else None
             ),
-            "note": "Host timestamps are not synchronized to camera frame timestamps.",
+            "note": (
+                "Packet arrival-time timestamps are not camera capture timestamps "
+                "and are not synchronized to robot motion. With reordered B-frames "
+                "wallclock timestamps may be unsuitable; check the FFmpeg log "
+                "and inspect actual playback."
+            ),
             "error": self.error,
         }
         self.metadata_path.write_text(
