@@ -5,14 +5,14 @@ from pathlib import Path
 
 from core.config import Config
 from experiments.helpers import cases_for
-from experiments.quintic_confirmation.experiment import (
+from experiments.servoP_confirmation.experiment import (
     DEFAULT_CSV, validate_quintic_csv,
 )
 
 
 class QuinticConfirmationTests(unittest.TestCase):
     def test_three_cases_share_identical_reference(self):
-        cases = cases_for("quintic_confirmation", Config())
+        cases = cases_for("servoP_confirmation", Config())
         self.assertEqual(len(cases), 3)
         self.assertEqual(
             [(c["aheadtime"], c["gain"]) for c in cases],

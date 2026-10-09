@@ -13,7 +13,7 @@ from experiments.csv_servo.points import load_points
 SAMPLE_PERIOD_S = 0.030
 EXPECTED_SAMPLES = 68
 PARAMETER_CASES = ((20.0, 300.0), (20.0, 500.0), (50.0, 300.0))
-DEFAULT_CSV = Path(__file__).resolve().parents[1] / "quintic" / "points_quintic.csv"
+DEFAULT_CSV = Path(__file__).with_name("points_servoP_quintic.csv")
 POSE_TOL = 1e-5
 
 
@@ -57,7 +57,7 @@ def build_cases(config, csv_path=None):
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
     return [
         {
-            "name": "quintic_confirmation",
+            "name": "servoP_confirmation",
             "mode": "csv",
             "csv_path": str(path),
             "csv_sha256": digest,
