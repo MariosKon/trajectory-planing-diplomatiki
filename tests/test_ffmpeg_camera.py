@@ -38,8 +38,14 @@ class FFmpegCameraTests(unittest.TestCase):
             proc = MagicMock()
             proc.wait.return_value = 0
             def poll():
-                r.output_path.write_bytes(b'x' * 2048)
-                r.progress_path.write_text('frame=1\nprogress=continue\n', encoding='utf-8')
+                # Simulate the first video packet arriving during startup.
+                # Later poll() calls (including stop()) must not overwrite
+                # FFmpeg's final progress report.
+                if not r.progress_path.exists():
+                    r.output_path.write_bytes(b'x' * 2048)
+                    r.progress_path.write_text(
+                        'frame=1\nprogress=continue\n', encoding='utf-8'
+                    )
                 return None
             proc.poll.side_effect = poll
             with patch('loggers.camera_logger.shutil.which', return_value='ffmpeg'), patch('loggers.camera_logger.subprocess.Popen', return_value=proc):
