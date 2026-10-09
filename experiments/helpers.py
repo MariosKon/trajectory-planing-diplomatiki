@@ -1,7 +1,7 @@
 from itertools import product
 from pathlib import Path
 
-def cases_for(name, cfg, csv_path=None):
+def cases_for(name, cfg, csv_path=None, *, payload_phase="baseline", physical_payload_mass_kg=None):
     if name == "servoP_confirmation":
         from experiments.servoP_confirmation.experiment import build_cases
         return build_cases(cfg, csv_path)
@@ -63,14 +63,10 @@ def cases_for(name, cfg, csv_path=None):
         ]
 
     if name == "payload":
-        return [{
-            "name": name,
-            "mode": "movel",
-            "start": cfg.start,
-            "target": cfg.target,
-            "speed": 50,
-            "acceleration": 50,
-            "payload_kg": mass,
-        } for mass in [0.5]]
+        if csv_path is not None:
+            raise ValueError("Payload comparison selects pinned cases; --csv is not supported")
+        from experiments.payload.experiment import build_cases
+        return build_cases(cfg, phase=payload_phase,
+                           physical_payload_mass_kg=physical_payload_mass_kg)
 
     raise ValueError(f"Unknown experiment: {name}")
