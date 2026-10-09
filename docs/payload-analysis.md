@@ -4,16 +4,26 @@
 
 ## Goal and design
 
-Compare the recorded Rigol electrical-power trace and the robot's tracking
-of the **same six trajectories** before and after a manually changed physical
-payload. Execute **one repetition of each algorithm per load condition**:
-six trials before the change and six after, **12 trials total**.
-This is a preliminary paired comparison, not a statistical repeatability study.
+Compare the recorded Rigol electrical-power traces and robot tracking for
+the **same six trajectories** under three manually established physical
+payload conditions: `baseline` (as-is), `full`, and `empty`.
+Execute **one repetition of each algorithm per condition**:
+six trials per load condition, **18 trials total**. Every phase is launched
+independently. No software operation changes the contents or attachment
+of the physical payload.
 
-The original motion parameters have already been exercised in the
-2026-10-09 final hardware runs. This does **not** validate the same commands
-for any heavier or differently mounted payload: check mass, robot limits,
-mounting, clearance and stability again before enabling real motion.
+For a liquid container, define full and empty based on the *same* vessel,
+tooling, mounting and location, where feasible. Record total effective
+mass (including the vessel), liquid mass/fill condition, and center-of-mass
+changes. The `baseline` phase preserves whatever physical setup existed
+before the test and must be accurately documented; it is not automatically
+an empty or full condition. These three conditions are categorical
+experimental labels, not robot commands.
+
+The original motion parameters were exercised in the 2026-10-09 final
+hardware runs. This does **not** validate the same trajectories with
+heavier, shifted, or liquid payloads: verify load limits, clearance,
+fixture stability and possible liquid sloshing before real motion.
 
 | Payload order | Existing experiment | 1-based source case | Selected fastest previously tested profile |
 | --- | --- | ---: | --- |
@@ -43,10 +53,9 @@ fastest Cubic and Quintic references have analytic peak speeds above the
 measured fast MoveL plateau; do not conflate equal path duration with
 equal maximum speed or assume clearance for a heavier load.
 
-## Two deliberately separate commands
+## Three deliberately separate commands
 
-Run from the project root. First inspect the selected cases and perform
-a dry run (no robot commands):
+From the project root, run offline checks and verify the cases:
 
 ```powershell
 python -m unittest discover -s tests -v
@@ -54,34 +63,41 @@ python main.py --experiment payload --list-cases
 python main.py --experiment payload --payload-phase baseline
 ```
 
-After checking mechanical safety, logger settings, controller configuration,
-and the dry-run case listing, record the **first physical load**:
+After inspecting the physical setup, instrument configuration, loading,
+path, speed and safety limits, run the **as-is** condition:
 
 ```powershell
 python main.py --experiment payload --payload-phase baseline --execute
 ```
 
-**The program exits after these six trials. It never continues on its own
-with a new payload.** Review the baseline's `trial_summary.csv`,
-`experiment_summary.json`, robot traces, Rigol waveforms and video. If any
-movement failed, do not proceed; if a capture is `partial`, evaluate
-whether it should be rerun before interpreting the power trace.
+The process exits after six trials. Review `trial_summary.csv`,
+`experiment_summary.json`, feedback, Rigol traces, and camera recording.
+If a movement fails, do not proceed. If a recording is `partial`, inspect
+its acquisition validity before using its power statistics.
 
-Stop the robot and safely change the payload **manually**. Verify mechanical
-attachment, robot payload/load limits, tool configuration, clearance and
-safe homing with the altered load. With the changed payload installed,
-and only after confirming that the experiment path and speed are still
-acceptable, explicitly start the second phase:
+Safely stop motion, establish the **full** physical condition and verify
+tool mass, mounting, center of mass, limits and clearances again.
+Only then start the next command:
 
 ```powershell
-python main.py --experiment payload --payload-phase changed --execute
+python main.py --experiment payload --payload-phase full --execute
 ```
 
-To record a physically measured load (in kilograms), append
-`--payload-mass-kg <measured_value>` **separately to both phase commands**.
-This option is metadata only and does not change the robot's payload
-compensation. Do not enter a guessed mass. The total mass, contents and
-mounting / center of mass should also be recorded in lab notes.
+Repeat the mechanical checks after changing to the **empty** condition
+(same vessel/mounting when possible):
+
+```powershell
+python main.py --experiment payload --payload-phase empty --execute
+```
+
+These are independent six-case runs, *not* a continuous unattended
+18-motion sequence. You can choose the physical order for safety and
+convenience; the phase labels describe the actual load, not its order.
+
+Optionally append `--payload-mass-kg N` to **each** phase command
+(where N is a measured nonnegative mass in kg). This field is
+**recording metadata only**, not the robot's configured `SetPayload` value.
+Use measured totals; do not enter guesses.
 
 ## Robot controller payload versus measured physical payload
 
@@ -92,7 +108,7 @@ configured. Independently review and set these configuration values when
 appropriate for the tool and physical mass; do not assume an attached load
 is automatically configured because `--payload-mass-kg` was provided.
 
-Keep all the non-payload test conditions identical between phases:
+Keep all the non-payload test conditions identical across all three conditions:
 tool TCP, workspace/path, fixture location, ServoP tuning, Rigol
 current-probe position and scale, timebase, camera, and logger setup.
 The existing `config/common.json` selects 0.5 s/div (nominal 6 s
@@ -101,10 +117,11 @@ track any deliberate controller-payload changes.
 
 ## Output and interpretation
 
-The two invocations save into independent directories:
+The three invocations save into independent directories:
 
 - `results/payload/baseline/<timestamp>/`
-- `results/payload/changed/<timestamp>/`
+- `results/payload/full/<timestamp>/`
+- `results/payload/empty/<timestamp>/`
 
 Each uses the standard `case_001` through `case_006` and
 `trial_001` folders, `case.json`, robot feedback and
@@ -115,7 +132,7 @@ The aggregate CSV additionally identifies `trajectory_profile`,
 `physical_payload_mass_kg`. Original CSV reference SHA-256 checks
 remain in force before robot motion.
 
-Suggested comparison for each **paired algorithm**: overlay the Rigol
+Suggested comparison for each **algorithm across all three load conditions**: overlay the Rigol
 power waveforms on a consistent time axis, compare a clearly defined
 motion-relative power statistic only when synchronization supports it,
 compare TCP position error, actual motion duration and joint velocities,
