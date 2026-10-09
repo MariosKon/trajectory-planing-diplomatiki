@@ -38,22 +38,52 @@ def main():
             "trapezoidal_matched","double_s_matched","ruckig_matched","payload","servop_behavior","servoj_behavior","servoP_confirmation"
         ],
     )
-    parser.add_argument("--repetitions", type=int, default=3)
+    parser.add_argument("--repetitions", type=int, default=None,
+                        help="Repetitions per case (default: 3; payload: exactly 1)")
     parser.add_argument("--case", type=int, default=None,
                         help="Run only one 1-based parameter combination (e.g. --case 1)")
     parser.add_argument("--list-cases", action="store_true",
                         help="Print available case numbers and parameters; no motion")
     parser.add_argument("--csv", default=None)
+    parser.add_argument(
+        "--payload-phase", choices=["baseline", "changed"],
+        help="Physical payload condition; required for real payload experiments",
+    )
+    parser.add_argument(
+        "--payload-mass-kg", type=float, default=None,
+        help="Measured physical load in kg, recorded as metadata only. "
+             "Does not program the controller SetPayload value.",
+    )
     parser.add_argument("--config", default="config/common.json")
     parser.add_argument(
         "--execute", action="store_true",
         help="Send real commands to the robot. Without this flag, dry-run."
     )
     args = parser.parse_args()
-    if args.repetitions < 1:
+    is_payload = args.experiment == "payload"
+    if is_payload:
+        if args.repetitions not in (None, 1):
+            parser.error("Payload comparison requires exactly one repetition per case")
+        if args.execute and args.payload_phase is None:
+            parser.error("Real payload execution requires --payload-phase baseline|changed")
+        repetitions = 1
+        phase = args.payload_phase or "baseline"
+    else:
+        if args.payload_phase is not None or args.payload_mass_kg is not None:
+            parser.error("--payload-phase and --payload-mass-kg require --experiment payload")
+        repetitions = 3 if args.repetitions is None else args.repetitions
+        phase = None
+    if repetitions < 1:
         parser.error("Repetitions must be >= 1")
     cfg = Config.load(ROOT/args.config)
-    all_cases = cases_for(args.experiment, cfg, args.csv)
+    try:
+        all_cases = cases_for(
+            args.experiment, cfg, args.csv,
+            payload_phase=phase or "baseline",
+            physical_payload_mass_kg=args.payload_mass_kg,
+        )
+    except ValueError as exc:
+        parser.error(str(exc))
     if args.list_cases:
         for index, case in enumerate(all_cases, 1):
             print(f"Case {index}/{len(all_cases)}: {case}")
@@ -68,11 +98,24 @@ def main():
         print("WARNING: REAL ROBOT MOTION ENABLED")
     else:
         print("Dry run: no robot motion will be commanded")
+    if is_payload:
+        print(f"Payload comparison phase: {phase.upper()} — {len(cases)} selected trajectories")
+        print("Physical payload mass is recording metadata only. "
+              "Verify real attachment, clearance, load limits and the "
+              "controller tool_index/payload_kg configuration before executing.")
+        if args.execute:
+            print("IMPORTANT: This invocation runs ONLY the selected phase. "
+                  "Changing the physical payload requires a NEW invocation.")
     result = batch(
-        cfg, args.experiment, cases,
-        args.repetitions, execute=args.execute
+        cfg,
+        f"payload/{phase}" if is_payload else args.experiment,
+        cases, repetitions, execute=args.execute
     )
     print("Results:", result)
+    if is_payload and phase == "baseline":
+        print("STOP AFTER BASELINE. Inspect recording/status and safely change "
+              "the physical payload and controller configuration. "
+              "Run again with --payload-phase changed only after verification.")
 
 if __name__ == "__main__":
     main()
