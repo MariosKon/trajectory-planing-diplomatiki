@@ -1,4 +1,5 @@
 """L9 velocity/acceleration/jerk parameter sweep; separate from fixed-time."""
+import csv
 import hashlib
 import math
 from pathlib import Path
@@ -7,12 +8,41 @@ from experiments.piecewise_fixed_time import _verify_config
 from experiments.polynomial_fixed_time import (
     REFERENCE_START, REFERENCE_END, SAMPLE_PERIOD_S, MOVEL_FAST_PLATEAU_MM_S,
 )
-MATRIX = (
-    (300.,500.,6000.),(300.,800.,10000.),(300.,1100.,16000.),
-    (380.,500.,10000.),(380.,800.,16000.),(380.,1100.,6000.),
-    (460.,500.,16000.),(460.,800.,6000.),(460.,1100.,10000.),
-)
-DISTANCE = math.dist(REFERENCE_START[:3],REFERENCE_END[:3])
+MATRIX_PATH = Path(__file__).resolve().parent / "piecewise_sweep" / "case_matrix.csv"
+DISTANCE = math.dist(REFERENCE_START[:3], REFERENCE_END[:3])
+
+
+def load_matrix(path=None):
+    """Read MATLAB-generated nine-case L9 matrix at case-selection time.
+
+    This keeps MATLAB (not a hardcoded Python tuple) authoritative.
+    All cases are checked for finite positive limits, ordered 1..9 indices,
+    and pairwise orthogonality before any profile is accepted.
+    """
+    matrix_path = Path(path) if path is not None else MATRIX_PATH
+    with matrix_path.open("r", newline="", encoding="utf-8-sig") as handle:
+        reader = csv.DictReader(handle)
+        columns = ["case", "velocity_mm_s", "acceleration_mm_s2", "jerk_mm_s3"]
+        if reader.fieldnames != columns:
+            raise ValueError(f"Invalid MATLAB case matrix header: {matrix_path}")
+        rows = []
+        for n, row in enumerate(reader, 1):
+            try:
+                number = int(row["case"])
+                values = tuple(float(row[col]) for col in columns[1:])
+            except (ValueError, TypeError, KeyError) as exc:
+                raise ValueError(f"Invalid case matrix row {n}") from exc
+            if number != n or not all(math.isfinite(v) and v > 0 for v in values):
+                raise ValueError(f"Invalid L9 case {n}: {values}")
+            rows.append(values)
+    if len(rows) != 9:
+        raise ValueError("MATLAB parameter matrix must contain exactly nine cases")
+    if any(len({row[d] for row in rows}) != 3 for d in range(3)):
+        raise ValueError("L9 matrix must have 3 levels for V, A and J")
+    for a,b in ((0,1),(0,2),(1,2)):
+        if len({(row[a],row[b]) for row in rows}) != 9:
+            raise ValueError("L9 matrix must have all nine pairs for each factor pair")
+    return tuple(rows)
 
 
 def parameters(profile,V,A,J=None):
@@ -109,9 +139,13 @@ def sweep_cases(profile,cfg):
     if profile not in ("trapezoidal","double_s","ruckig"):
         raise ValueError("Invalid piecewise algorithm")
     _verify_config(cfg)
+    matrix = load_matrix()
+    matrix_sha256 = hashlib.sha256(MATRIX_PATH.read_bytes()).hexdigest()
     cases=[]
-    for i,(V,A,J) in enumerate(MATRIX,1):
+    for i,(V,A,J) in enumerate(matrix,1):
         case=dict(name=f"{profile}_sweep_{i:02d}",study="L9",
+                  matlab_matrix_path=str(MATRIX_PATH),
+                  matlab_matrix_sha256=matrix_sha256,
                   velocity_limit_mm_s=V,acceleration_limit_mm_s2=A,
                   global_speed_factor=100,
                   exceeds_movel_fast_speed=V>MOVEL_FAST_PLATEAU_MM_S)

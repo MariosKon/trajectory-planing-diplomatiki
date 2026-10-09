@@ -1,12 +1,16 @@
-"""Regenerate all 18 sweep CSVs: python -m experiments.piecewise_sweep.generate"""
+"""Optional independent Python cross-check of MATLAB-generated CSVs.
+
+MATLAB is authoritative for the editable L9 study:
+run('experiments/piecewise_sweep/generate_piecewise_sweep.m')
+"""
 import csv
 from pathlib import Path
-from experiments.piecewise_parameter_study import MATRIX,expected_rows,parameters,verify
+from experiments.piecewise_parameter_study import load_matrix,expected_rows,parameters,verify
 
 ROOT=Path(__file__).resolve().parents[1]
 def main():
     for profile in ("trapezoidal","double_s"):
-        for i,(V,A,J) in enumerate(MATRIX,1):
+        for i,(V,A,J) in enumerate(load_matrix(),1):
             jerk=J if profile=="double_s" else None
             rows=expected_rows(profile,V,A,jerk)
             path=ROOT/profile/f"points_{profile}_sweep_{i:02d}.csv"
