@@ -91,7 +91,7 @@ class PiecewiseTimeTests(unittest.TestCase):
             run_trial(self.cfg, case, Path("unused"))
 
     def test_ruckig_limits_and_min_duration_are_recorded(self):
-        for case in cases_for("ruckig", self.cfg):
+        for case in cases_for("ruckig_matched", self.cfg):
             self.assertEqual(case["mode"], "ruckig")
             self.assertEqual(case["minimum_duration_s"], case["duration_s"])
             self.assertEqual(case["start"], list(REFERENCE_START))
@@ -107,7 +107,7 @@ class PiecewiseTimeTests(unittest.TestCase):
             from experiments.ruckig.planner import OnlineRuckigPlanner
         except ImportError:
             self.skipTest("Ruckig package not installed")
-        for case in cases_for("ruckig", self.cfg):
+        for case in cases_for("ruckig_matched", self.cfg):
             with self.subTest(duration=case["duration_s"]):
                 planner = OnlineRuckigPlanner(
                     start=case["start"], target=case["target"], period_s=0.03,
