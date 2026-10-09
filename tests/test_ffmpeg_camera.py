@@ -48,7 +48,7 @@ class FFmpegCameraTests(unittest.TestCase):
                     )
                 return None
             proc.poll.side_effect = poll
-            with patch('loggers.camera_logger.shutil.which', return_value='ffmpeg'), patch('loggers.camera_logger.subprocess.Popen', return_value=proc):
+            with patch('loggers.camera_logger.shutil.which', return_value='ffmpeg'), patch('loggers.camera_logger.subprocess.Popen', return_value=proc), patch('loggers.camera_logger.repair_recording', return_value={'validation': 'ffmpeg_decoded', 'empty_h264_nals_removed': 0}):
                 r.start()
                 r.progress_path.write_text('frame=77\nprogress=end\n', encoding='utf-8')
                 stats = r.stop()
