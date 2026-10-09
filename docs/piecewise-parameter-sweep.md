@@ -1,8 +1,11 @@
 # Nine-case piecewise velocity/acceleration/jerk study
 
 The unsuffixed experiments `trapezoidal`, `double_s`, and `ruckig`
-run this **nine-case parameter sweep**. The original three-case matched-time
-comparison remains separately available as `trapezoidal_matched`,
+run this **nine-case parameter sweep**. **MATLAB is the editable source of
+the nine V/A/J settings**, not a preconfigured Python matrix. The MATLAB
+script writes both the six-dimensional position CSVs and a shared matrix
+manifest read by Python. The original three-case matched-time comparison
+remains separately available as `trapezoidal_matched`,
 `double_s_matched`, and `ruckig_matched` (see `piecewise-test-plan.md`).
 
 All use the same 800 mm Cartesian Y translation, unchanged orientation,
@@ -32,21 +35,58 @@ All use the same 800 mm Cartesian Y translation, unchanged orientation,
   attained peak V/A/J. Ruckig is an online minimum-time profile using the
   *unscaled* limits, so it may differ in planned time and command onset.
 
-Regenerate the 18 checked CSV files and inspect the CLI case matrix:
+### MATLAB: edit, generate, print and plot the nine cases
+
+Open `experiments/piecewise_sweep/generate_piecewise_sweep.m` and edit
+`caseMatrix` (9 rows, `[V A J]`, units mm/s, mm/s² and mm/s³).
+Trapezoidal ignores J; Double-S and online Ruckig use all three.
+The script checks that the nine rows preserve an L9 three-level balanced
+design and that each profile reaches the requested acceleration and velocity
+limits with a positive cruise phase. It will reject infeasible values rather
+than silently change the study design.
+
+From the repository root in MATLAB:
+
+```matlab
+run('experiments/piecewise_sweep/generate_piecewise_sweep.m')
+```
+
+**Outputs:** `case_matrix.csv` in `experiments/piecewise_sweep/`,
+nine `points_trapezoidal_sweep_XX.csv` files, and nine
+`points_double_s_sweep_XX.csv` files. Each export is reopened in MATLAB,
+checked for header, mode, point count, numeric pose, analytic values,
+endpoints and monotonic Y. MATLAB **prints** the full path, applied V/A/J
+limits, effective peaks after 30 ms alignment, duration, sample count,
+first/last point, and PASS result. It **plots** the nine-case position and
+velocity trajectories, and Double-S jerk. For all rows in the MATLAB
+Command Window change `printEveryCsvRow=false` to `true`.
+
+The Python runner loads `case_matrix.csv` fresh for **all three**
+algorithms, including online Ruckig (which does not need CSV).
+No hardcoded Python sweep tuples need editing. If any MATLAB-generated
+CSV disagrees with its parameter matrix, `--list-cases` refuses it.
+The generated CSV content is hashed again immediately before physical
+motion. **Do not change MATLAB's 30 ms interval or the reference poses**
+when using the built-in nine-case experiment; for different poses run
+the CSV manually with `--csv` and check hardware safety independently.
+
+After MATLAB generation, check cases in PowerShell (no robot motion):
 
 ```powershell
-python -m experiments.piecewise_sweep.generate
 python -m unittest discover -s tests -v
 python main.py --experiment trapezoidal --list-cases
 python main.py --experiment double_s --list-cases
 python main.py --experiment ruckig --list-cases
-# Optional scope verification for the actual sweep:
 python main.py --experiment double_s --case 1 --repetitions 1 --config config/piecewise_sweep_rigol_1s.json
 ```
 
-Each CSV is checked analytically at case-selection time and SHA-256
-revalidated before commanding motion. The older matched-time experiments
-can be listed by appending `_matched`.
+The independent Python generator remains an optional cross-check:
+`python -m experiments.piecewise_sweep.generate`. It reads the same
+MATLAB-exported `case_matrix.csv` rather than defining new parameter
+values, but MATLAB should be used as the normal trajectory-generation
+workflow. To access the separate three-case MATLAB profiles, run
+`experiments/piecewise_fixed_time/generate_matched_piecewise.m`
+(see the matched-time test plan).
 
 **Rigol methodology:** previous 3.93 s Cubic/Quintic trials had incomplete
 0.5 s/div scope coverage. For comparable power fluctuation across the sweep,

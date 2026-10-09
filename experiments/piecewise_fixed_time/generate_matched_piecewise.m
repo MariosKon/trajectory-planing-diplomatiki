@@ -13,6 +13,7 @@ endPose = [-600 400 250 -90 0 90];
 D = norm(endPose(1:3)-startPose(1:3));
 profiles = {'trapezoidal','double_s'};
 makePlot = true;
+printEveryCsvRow = false; % Set true to display every CSV row in MATLAB
 
 for p = 1:numel(profiles)
     profile = profiles{p};
@@ -55,6 +56,11 @@ for p = 1:numel(profiles)
         assert(max(abs(restored(end,:)-endPose)) < 1e-9);
         fprintf('%s T=%.2f s N=%d V=%.3f: CSV read-back PASS: %s\n',...
             profile,T,height(check),V,path);
+        fprintf('  Start: [%s] | End: [%s]\\n', ...
+            num2str(restored(1,:),' %.6f'),num2str(restored(end,:),' %.6f'));
+        if printEveryCsvRow
+            type(path);
+        end
         if makePlot
             figure('Name',[profile ' T=' num2str(T)]);
             subplot(2,1,1);

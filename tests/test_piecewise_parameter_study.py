@@ -2,26 +2,28 @@
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+import hashlib
 from core.config import Config
 from core.runner import run_trial
 from experiments.helpers import cases_for
 from experiments.csv_servo.points import load_points
-from experiments.piecewise_parameter_study import MATRIX, parameters, verify
+from experiments.piecewise_parameter_study import MATRIX_PATH, load_matrix, parameters, verify
 from experiments.polynomial_fixed_time import REFERENCE_START, REFERENCE_END
 
 
 class SweepTests(unittest.TestCase):
     def setUp(self):
         self.cfg=Config()
+        self.matrix=load_matrix()
 
     def test_design_and_case_order(self):
-        self.assertEqual(len(MATRIX),9)
+        self.assertEqual(len(self.matrix),9)
         for a,b in ((0,1),(0,2),(1,2)):
-            self.assertEqual(len(set((x[a],x[b]) for x in MATRIX)),9)
+            self.assertEqual(len(set((x[a],x[b]) for x in self.matrix)),9)
         for profile in ("trapezoidal","double_s","ruckig"):
             cases=cases_for(profile,self.cfg)
             self.assertEqual(len(cases),9)
-            for i,(c,(v,a,j)) in enumerate(zip(cases,MATRIX),1):
+            for i,(c,(v,a,j)) in enumerate(zip(cases,self.matrix),1):
                 with self.subTest(profile=profile,index=i):
                     self.assertEqual(c["name"],f"{profile}_sweep_{i:02d}")
                     self.assertEqual(c["velocity_limit_mm_s"],v)
@@ -29,11 +31,35 @@ class SweepTests(unittest.TestCase):
                     self.assertEqual(c.get("jerk_limit_mm_s3"),
                                      None if profile=="trapezoidal" else j)
                     self.assertEqual(c["global_speed_factor"],100)
-                    self.assertFalse(c["exceeds_movel_fast_speed"])
+                    self.assertEqual(c["exceeds_movel_fast_speed"],v>470.5)
+                    self.assertEqual(c["matlab_matrix_path"],str(MATRIX_PATH))
+                    self.assertEqual(c["matlab_matrix_sha256"],
+                                     hashlib.sha256(MATRIX_PATH.read_bytes()).hexdigest())
+
+    def test_editable_matlab_manifest_validation(self):
+        with TemporaryDirectory() as tmp:
+            manifest=Path(tmp)/"case_matrix.csv"
+            original=MATRIX_PATH.read_text(encoding="utf-8")
+            self.assertEqual(load_matrix(MATRIX_PATH), self.matrix)
+            manifest.write_text(original.replace("case,velocity_mm_s",
+                                                 "index,velocity_mm_s",1),
+                                encoding="utf-8")
+            with self.assertRaisesRegex(ValueError,"header"):
+                load_matrix(manifest)
+            manifest.write_text(original.replace("1,300,500,6000",
+                                                 "1,NaN,500,6000",1),
+                                encoding="utf-8")
+            with self.assertRaisesRegex(ValueError,"Invalid L9"):
+                load_matrix(manifest)
+            manifest.write_text(original.replace("9,460,1100,10000",
+                                                 "9,300,500,6000",1),
+                                encoding="utf-8")
+            with self.assertRaisesRegex(ValueError,"pairs|levels"):
+                load_matrix(manifest)
 
     def test_all_18_analytic_csvs(self):
         for profile in ("trapezoidal","double_s"):
-            for i,(case,(v,a,j)) in enumerate(zip(cases_for(profile,self.cfg),MATRIX),1):
+            for i,(case,(v,a,j)) in enumerate(zip(cases_for(profile,self.cfg),self.matrix),1):
                 with self.subTest(profile=profile,index=i):
                     jerk=j if profile=="double_s" else None
                     p=parameters(profile,v,a,jerk)
@@ -50,7 +76,7 @@ class SweepTests(unittest.TestCase):
                     verify(profile,case["csv_path"],v,a,jerk)
 
     def test_ruckig_limits_and_minimum_duration(self):
-        for c,(v,a,j) in zip(cases_for("ruckig",self.cfg),MATRIX):
+        for c,(v,a,j) in zip(cases_for("ruckig",self.cfg),self.matrix):
             self.assertEqual(c["mode"],"ruckig")
             self.assertIsNone(c["minimum_duration_s"])
             self.assertEqual(c["max_velocity"],[v]*6)
@@ -88,7 +114,7 @@ class SweepTests(unittest.TestCase):
             lines[8]=",".join(cells)
             path.write_text("\n".join(lines)+"\n",encoding="utf-8")
             with self.assertRaisesRegex(ValueError,"Unexpected pose"):
-                verify("double_s",path,*MATRIX[0])
+                verify("double_s",path,*self.matrix[0])
 
     def test_ruckig_online_planner_offline_if_available(self):
         try:

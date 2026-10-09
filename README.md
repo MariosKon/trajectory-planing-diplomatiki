@@ -107,12 +107,36 @@ The main branch's selected ServoP defaults, **aheadtime=20 and gain=300**, are r
 
 ## Piecewise V/A/J sweep and matched-time control
 
-The [nine-case parameter sweep](docs/piecewise-parameter-sweep.md) varies
-velocity, acceleration and jerk limits (L9 design). The original
-[three-case matched-time study](docs/piecewise-test-plan.md) remains
-available as `trapezoidal_matched`, `double_s_matched` and
-`ruckig_matched`. Both use the same Cartesian 800 mm path, 30 ms command
-period and ServoP tuning as the polynomial experiments.
+**Generate the parameter-sweep CSVs in MATLAB** (no input CSV required):
+
+```matlab
+run('experiments/piecewise_sweep/generate_piecewise_sweep.m')
+```
+
+Edit `caseMatrix` in the MATLAB script to choose the **nine V/A/J rows**.
+The script creates **18 CSVs** (9 Trapezoidal + 9 Double-S), writes
+`experiments/piecewise_sweep/case_matrix.csv`, reopens and validates every
+CSV, prints the limits / duration / sample count / output path in the
+MATLAB Command Window, and plots the position, velocity and jerk profiles.
+Use `printEveryCsvRow = true` if you want all CSV rows printed too.
+Python **reads the MATLAB-exported matrix**, validates each generated
+trajectory analytically, and pins the SHA-256 at run selection. You do
+not need to edit Python's parameter tuples to change the sweep.
+
+The original [three-case matched-time study](docs/piecewise-test-plan.md)
+has its own MATLAB generator:
+
+```matlab
+run('experiments/piecewise_fixed_time/generate_matched_piecewise.m')
+```
+
+Its Python runner names are `trapezoidal_matched`,
+`double_s_matched` and `ruckig_matched`. Those **matched-time**
+references use their original fixed-time configuration, independent of
+the editable sweep. Ruckig generates points online and therefore needs no
+trajectory CSV in either study.
+
+See the [nine-case MATLAB generation and physical-test protocol](docs/piecewise-parameter-sweep.md).
 
 ```powershell
 python main.py --experiment trapezoidal --list-cases
