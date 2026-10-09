@@ -2,7 +2,7 @@ import csv
 import hashlib
 import json
 import time
-from dataclasses import asdict, replace
+from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 
@@ -48,25 +48,13 @@ def effective_servo_parameters(cfg, case, command_mode):
 
 
 def capture_config_for_case(cfg, case):
-    """Widen Rigol for fixed-time polynomials, without changing global config.
+    """Use the configured Rigol timebase for every trajectory.
 
-    Keep 1 s/div across all 3 durations for comparable NORM display traces.
-    Scope time is trigger-relative, so this does not itself synchronize
-    physical motion and scope samples.
+    The configured 0.5 s/div yields a six-second display window, including
+    fixed-time Cubic/Quintic runs. Never silently widen the acquisition or
+    weaken the logger's validity checks for an incomplete capture.
     """
-    if (case.get("mode") != "csv" or "duration_s" not in case
-            or not cfg.rigol_resource
-            or cfg.rigol_horizontal_scale_s_per_div is None):
-        return cfg
-    required_span_s = (
-        float(case["duration_s"]) + cfg.rigol_pre_delay_s
-        + cfg.robot_logger_post_delay_s + 1.5
-    )
-    scale = "rigol_horizontal_scale_s_per_div" 
-    if cfg.rigol_horizontal_scale_s_per_div >= scale:
-        return cfg
-    return replace(cfg, rigol_horizontal_scale_s_per_div=scale)
-
+    return cfg
 
 def execute_motion(robot, cfg, case, manager, run_dir):
     from dobot_sdk import CoordinateType
