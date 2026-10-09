@@ -35,7 +35,75 @@ python main.py --experiment ruckig --repetitions 1
 python main.py --experiment cubic --csv PATH_TO_POINTS.csv --repetitions 1
 ```
 
-Cubic, quintic, trapezoidal and Double-S each use a supplied trajectory CSV **per invocation** in this branch. The dedicated `servop_behavior` experiment has its own MATLAB cubic generator and committed reference CSV in `experiments/servop_behavior/`; it varies servo tracking parameters while keeping the same Cartesian MoveL path. The planned 3×3 offline/Ruckig matrix is **not yet implemented**. MoveJ still requires validated joint-space endpoints; the payload helper currently defines only one load. Camera-video analysis is not yet implemented.
+Cubic and Quintic expose three fixed-time reference cases each by default; `--csv PATH` still selects a custom single-case CSV. Trapezoidal and Double-S each use a supplied trajectory CSV per invocation. The dedicated `servop_behavior` experiment has its own MATLAB cubic generator and committed reference CSV in `experiments/servop_behavior/`; it varies servo tracking parameters while keeping the same Cartesian MoveL path. The planned 3×3 offline/Ruckig matrix is **not yet implemented**. MoveJ still requires validated joint-space endpoints; the payload helper currently defines only one load. Camera-video analysis is not yet implemented.
+
+## Offline polynomial study: fixed-time Cubic and Quintic
+
+The final MoveL comparison source is `Final Results/moveL/20261009_134603_564176/` (45 successful runs). The polynomial study holds **nominal traversal time fixed** between Cubic and Quintic at each corresponding MoveL speed level. All three cases use the **same Cartesian poses**, linear Y displacement 800 mm, 30 ms ServoP update, selected default `aheadtime=20`, `gain=300`, and **`SpeedFactor(100)`** for streaming. These are prescribed times, not speed-constrained optimization results.
+
+| Case | MoveL speed-factor level | MoveL measured mean time (approx.) | Polynomial CSV duration | Samples |
+| --- | --- | --- | --- | --- |
+| 1 | 50% | 3.93 s | **3.93 s** | 132 |
+| 2 | 75% | 2.81 s | **2.79 s** | 94 |
+| 3 | 100% | 2.29–2.30 s | **2.31 s** | 78 |
+
+`CSV duration = (number of samples - 1) * 0.030 s`. The Python runner sends every sample including both endpoints; wall-clock motion measurement also includes command overhead, a final hold interval and robot settling, so **actual motion durations may differ**. Compare measured `MOTION_START`/`MOTION_END` and physical 1–99% movement durations after the hardware tests.
+
+**Speed trade-off:** An equal-time polynomial has a different peak speed from MoveL and even from the other polynomial. Analytic peaks on the 800 mm Y translation are:
+
+| Time | Cubic peak V | Quintic peak V |
+| --- | --- | --- |
+| 3.93 s | 305.3 mm/s | 381.7 mm/s |
+| 2.79 s | 430.1 mm/s | **537.6 mm/s** |
+| 2.31 s | **519.5 mm/s** | **649.4 mm/s** |
+
+Bold speeds exceed the ~470.5 mm/s plateau observed in fastest MoveL. **Do not interpret this as speed-limited equivalence** or assume those profiles are safe just because MoveL was successful. Physically review these faster trajectories, the robot's limits, payload and clearances **before enabling `--execute`**. Cubic acceleration is discontinuous when joining a stationary segment; physical jerk is not bounded by the finite interior polynomial derivative.
+
+### Regenerate the references with MATLAB
+
+The MATLAB wrappers require no input CSV; they generate all three files in their respective experiment folders:
+
+```matlab
+run('experiments/cubic/make_cubic_csv.m')
+run('experiments/quintic/make_quintic_csv.m')
+```
+
+The shared implementation is `experiments/polynomial_fixed_time/generate_fixed_time_polynomial.m`. All six reference CSVs are committed and analytically checked by the Python regression suite. MATLAB generation has not yet been physically validated.
+
+**MATLAB diagnostics (enabled by default):** both scripts now print a detailed report for each of their three exports: absolute CSV path, duration, 30 ms step, sample count, initial/final poses, analytic peak velocity/acceleration/interior jerk, and an explicit `CSV read-back: PASS` after MATLAB reopens the saved CSV and checks its header, ServoP modes, row count, numeric values, analytic waypoints, exact endpoints, and monotonic Y. A three-row summary follows. Each script opens **three figures** (one per duration), with position, velocity, acceleration and jerk. The position subplot overlays the actual reloaded CSV points. To suppress figures during batch generation, set `makePlot = false;` in the relevant MATLAB wrapper; verification and printed reports remain enabled. The read-back is a file-consistency test, not proof of physical robot safety.
+
+### List and dry-run the three cases
+
+```powershell
+python -m unittest discover -s tests -v
+python main.py --experiment cubic --list-cases
+python main.py --experiment quintic --list-cases
+python main.py --experiment cubic --case 1 --repetitions 1
+python main.py --experiment quintic --case 1 --repetitions 1
+```
+
+For real hardware, first inspect the actual exported CSVs, assess the planned peak speeds, confirm the controller's ServoP speed factor and check tracking under supervision. Only after that, a **single** case can be launched using `--execute`, for example:
+
+```powershell
+python main.py --experiment cubic --case 1 --repetitions 1 --execute
+```
+
+Start with case 1 and stop if tracking or physical behavior is unacceptable. **All experiments use the Rigol timebase from `config/common.json`, currently `0.5 s/div` (6-second display span).** Cubic and Quintic no longer automatically widen the scope to 12 seconds. The effective scope setting is logged in `rigol_metadata.json` and `result.json`; change the JSON setting to select a different span without modifying Python. The 6-second display has better time resolution for the same 1,200 preview points, but it can be **shorter than the full acquisition** for the 3.93-second case plus pre/post-roll. Such trials can be marked `partial` with invalid power metrics; do **not** treat their power/energy as quantitatively valid or relax the coverage checks. Scope time is trigger-relative, not aligned automatically with the robot. Full-window Rigol energy is **not** verified motion-only energy.
+
+Once validated, the intended final matrix is 3 cases × 5 repetitions × 2 polynomial profiles = **30 real executions**. No changes are made to trapezoidal, Double-S, Ruckig, or the dedicated ServoP/ServoJ tracking studies by this branch.
+
+### Timing and trial-status diagnostics
+
+The robot's total `MOTION_START` to `MOTION_END` time includes the streamed CSV commands, the final ServoP period and the SDK's `wait_for_motion` idle confirmation. **It is not the nominal polynomial duration.** To avoid conflating these, every polynomial trial now records:
+
+- `planned_trajectory_duration_s = (N - 1)*0.030` and `expected_stream_period_s = N*0.030` for the CSV itself.
+- `first_to_last_command_s`, `wait_for_robot_idle_s`, `effective_gain` and `effective_aheadtime` in `result.json` and the trial summary.
+- `SERVO_FIRST_COMMAND_SENT`, `SERVO_LAST_COMMAND_SENT`, `SERVO_STREAM_PERIOD_END` and `SERVO_ROBOT_IDLE` in `events.csv`.
+- `command_stream_first_to_last_s`, `post_stream_idle_wait_s`, and `tcp_travel_1pct_99pct_s` in `metrics.json` and the trial summary. The physical 1–99% time is calculated from the recorded 3D TCP actual positions projected onto the CSV's commanded start-to-target translation, not from the end-of-command event.
+
+The additional time seen in the first Cubic tests cannot be identified purely as tracking lag; the new timestamps distinguish command pacing, the fixed final period and the wait until robot-idle confirmation. `partial` means robot motion completed but at least one acquisition component failed, and is **counted separately** from `failed` in `experiment_summary.json`. In particular, a 6-second Rigol display does **not** justify overriding the acquisition-coverage validity test for longer recordings. Existing old results are not retroactively rewritten.
+
+The main branch's selected ServoP defaults, **aheadtime=20 and gain=300**, are retained by this study (unless explicitly overridden per case). ServoJ and historical gain-sweep cases keep their distinct defaults. Verify the effective values in `commands.csv` and `trial_summary.csv` before evaluating smoothness.
 
 ## Current measurement configuration
 

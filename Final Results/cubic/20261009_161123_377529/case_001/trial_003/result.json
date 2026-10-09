@@ -1,0 +1,85 @@
+{
+  "status": "partial",
+  "case": {
+    "name": "cubic_T3p93",
+    "mode": "csv",
+    "csv_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\cubic\\points_cubic_T3p93.csv",
+    "csv_sha256": "af1a8cdeda7f67db83dfab044348ed88feee2c85f24cb195a0dd38d61a56f3c1",
+    "duration_s": 3.93,
+    "expected_points": 132,
+    "expected_peak_speed_mm_s": 305.34351145038164,
+    "expected_peak_acceleration_mm_s2": 310.7821999494979,
+    "expected_peak_jerk_mm_s3": 158.15888038142384,
+    "exceeds_movel_fast_speed": false,
+    "global_speed_factor": 100
+  },
+  "rigol_requested_scale_s_per_div": 0.5,
+  "rigol_effective_scale_s_per_div": 0.5,
+  "motion": {
+    "command_count": 132,
+    "planned_trajectory_duration_s": 3.9299999999999997,
+    "expected_stream_period_s": 3.96,
+    "first_to_last_command_s": 3.91624399999273,
+    "wait_for_robot_idle_s": 0.6200075000087963,
+    "effective_aheadtime": 20.0,
+    "effective_gain": 300.0,
+    "late_commands": 0,
+    "maximum_lateness_ms": 0.0,
+    "mean_command_duration_ms": 7.403598484608775,
+    "elapsed_s": 4.582603200004087
+  },
+  "logging": {
+    "robot": {
+      "received_packets": 747,
+      "invalid_packets": 0,
+      "dropped_rows": 0,
+      "error_samples": 0,
+      "collision_samples": 0
+    },
+    "rigol": {
+      "resource": "USB0::0x1AB1::0x0517::DS1ZE264511439::INSTR",
+      "samples": 1200,
+      "error": "Rigol waveform duration shorter than acquisition duration",
+      "warnings": [
+        "Display waveform covers 5.995s of 7.135s host acquisition (84.0%). Power data invalid.",
+        "Power and energy use NORM display data; not motion-only energy. RAW scaling remains unverified."
+      ],
+      "power_trace_source": "NORM_DISPLAY",
+      "power_calibrated": true,
+      "power_data_valid": false
+    },
+    "camera": {
+      "path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\cubic\\20261009_161123_377529\\case_001\\trial_003\\camera.mkv",
+      "format": "matroska",
+      "codec": "copy",
+      "rtsp_transport": "tcp",
+      "timestamp_mode": "host_wallclock_on_packet_arrival",
+      "startup_confirmed_by": "ffmpeg_frame_progress",
+      "ffmpeg_log": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\cubic\\20261009_161123_377529\\case_001\\trial_003\\ffmpeg_camera.log",
+      "ffmpeg_progress": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\cubic\\20261009_161123_377529\\case_001\\trial_003\\ffmpeg_camera_progress.txt",
+      "frame_count": 386,
+      "video_validation": {
+        "validation": "ffmpeg_decoded",
+        "decoded_frames": 386,
+        "empty_h264_nals_removed": 14,
+        "original_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\cubic\\20261009_161123_377529\\case_001\\trial_003\\camera_original.mkv",
+        "note": "Video timestamps are host/RTSP estimates, not synchronized capture times."
+      },
+      "received_frames": null,
+      "encoded_fps": null,
+      "file_size_bytes": 4043168,
+      "host_start_perf_s": 105427.8954742,
+      "host_end_perf_s": 105441.9096274,
+      "host_start_utc": "2026-10-09T13:12:12.218813+00:00",
+      "host_end_utc": "2026-10-09T13:12:26.232836+00:00",
+      "startup_elapsed_s": 2.846963699994376,
+      "recorded_wall_duration_s": 14.014153199997963,
+      "note": "RTSP/host packet timestamps are not camera exposure times, and are not synchronized to robot or Rigol measurements. Check video_validation for decodability and repair status, and preserve ffmpeg_camera.log for source diagnostics.",
+      "error": null
+    }
+  },
+  "data_errors": {
+    "rigol": "Rigol waveform duration shorter than acquisition duration"
+  },
+  "error_ids": "0,{[]},GetErrorID();"
+}

@@ -1,0 +1,13 @@
+{
+  "name": "cubic_T2p79",
+  "mode": "csv",
+  "csv_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\cubic\\points_cubic_T2p79.csv",
+  "csv_sha256": "c06395cc80c76e3809ba682673da2b4140ad3c59ea1440a658d49f50caf92ba6",
+  "duration_s": 2.79,
+  "expected_points": 94,
+  "expected_peak_speed_mm_s": 430.10752688172045,
+  "expected_peak_acceleration_mm_s2": 616.6416156010329,
+  "expected_peak_jerk_mm_s3": 442.0370004308479,
+  "exceeds_movel_fast_speed": false,
+  "global_speed_factor": 100
+}

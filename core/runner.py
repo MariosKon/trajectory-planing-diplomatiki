@@ -2,6 +2,7 @@ import csv
 import hashlib
 import json
 import time
+import traceback
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
@@ -46,6 +47,15 @@ def effective_servo_parameters(cfg, case, command_mode):
         raise ValueError("Servo gain must be in [200, 1000]")
     return aheadtime, gain
 
+
+def capture_config_for_case(cfg, case):
+    """Use the configured Rigol timebase for every trajectory.
+
+    The configured 0.5 s/div yields a six-second display window, including
+    fixed-time Cubic/Quintic runs. Never silently widen the acquisition or
+    weaken the logger's validity checks for an incomplete capture.
+    """
+    return cfg
 
 def execute_motion(robot, cfg, case, manager, run_dir):
     from dobot_sdk import CoordinateType
@@ -98,6 +108,8 @@ def execute_motion(robot, cfg, case, manager, run_dir):
             if actual_sha != case["csv_sha256"]:
                 raise ValueError("Reference CSV changed after preflight; refusing motion")
         points = load_points(case["csv_path"])
+        if "expected_points" in case and len(points) != case["expected_points"]:
+            raise ValueError("Fixed-time trajectory point count changed")
         period = cfg.servo_time_s
         planner = None
     elif mode == "ruckig":
@@ -125,7 +137,9 @@ def execute_motion(robot, cfg, case, manager, run_dir):
         aheadtime, gain = effective_servo_parameters(cfg, case, points[0].mode)
         manager.event(
             "MOTION_PARAMETERS",
-            f"servo_t_s={period};aheadtime={aheadtime};gain={gain}",
+            f"servo_t_s={period};aheadtime={aheadtime};gain={gain};"
+            f"planned_duration_s={case.get('duration_s')};"
+            f"global_speed={case.get('global_speed_factor', cfg.slow_speed)}",
         )
     else:
         # Online Ruckig streams ServoP commands.
@@ -138,6 +152,8 @@ def execute_motion(robot, cfg, case, manager, run_dir):
     ] + [f"position_{i}" for i in range(1,7)]
 
     count = 0
+    first_command_perf = None
+    last_command_perf = None
     with (run_dir/"commands.csv").open(
         "w", newline="", encoding="utf-8"
     ) as handle:
@@ -184,8 +200,16 @@ def execute_motion(robot, cfg, case, manager, run_dir):
                 raise ValueError(f"Unsupported mode: {command_mode}")
 
             check_response(response)
-            duration = time.perf_counter()-command_started
+            command_completed = time.perf_counter()
+            duration = command_completed-command_started
             durations.append(duration)
+            if first_command_perf is None:
+                first_command_perf = command_completed
+                manager.event(
+                    "SERVO_FIRST_COMMAND_SENT",
+                    f"mode={command_mode};period_s={period:.6f}",
+                )
+            last_command_perf = command_completed
 
             row = {
                 "sample": count+1,
@@ -209,12 +233,32 @@ def execute_motion(robot, cfg, case, manager, run_dir):
             if planner is not None and finished:
                 break
 
+    if last_command_perf is not None:
+        manager.event(
+            "SERVO_LAST_COMMAND_SENT",
+            f"count={count};scheduled_duration_s={(count-1)*period:.6f}",
+        )
     remaining = started+count*period-time.perf_counter()
     if remaining > 0:
         time.sleep(remaining)
+    manager.event("SERVO_STREAM_PERIOD_END", f"count={count}")
+    wait_started = time.perf_counter()
     wait_for_motion(robot, cfg.motion_timeout_s)
+    wait_duration = time.perf_counter()-wait_started
+    manager.event("SERVO_ROBOT_IDLE", f"wait_s={wait_duration:.6f}")
     return {
         "command_count": count,
+        "planned_trajectory_duration_s": (
+            (count-1)*period if planner is None else None
+        ),
+        "expected_stream_period_s": count*period,
+        "first_to_last_command_s": (
+            last_command_perf-first_command_perf
+            if first_command_perf is not None else None
+        ),
+        "wait_for_robot_idle_s": wait_duration,
+        "effective_aheadtime": aheadtime,
+        "effective_gain": gain,
         "late_commands": late,
         "maximum_lateness_ms": max_lateness*1000,
         "mean_command_duration_ms": (
@@ -224,14 +268,26 @@ def execute_motion(robot, cfg, case, manager, run_dir):
     }
 
 def run_trial(cfg, case, run_dir, robot=None):
+    # Reject modified fixed-time reference before connecting/moving the robot.
+    if case.get("mode") == "csv" and "csv_sha256" in case:
+        actual_sha = hashlib.sha256(
+            Path(case["csv_path"]).read_bytes()
+        ).hexdigest()
+        if actual_sha != case["csv_sha256"]:
+            raise ValueError("Reference CSV changed after case selection")
     from dobot_sdk import CoordinateType
     owns_robot = robot is None
     if owns_robot:
         from dobot_sdk import DobotRobot
         robot = DobotRobot(cfg.robot_ip)
         robot.Connect()
-    manager = LoggingManager(cfg, run_dir)
-    result = {"status": "failed", "case": case}
+    capture_cfg = capture_config_for_case(cfg, case)
+    manager = LoggingManager(capture_cfg, run_dir)
+    result = {
+        "status": "failed", "case": case,
+        "rigol_requested_scale_s_per_div": cfg.rigol_horizontal_scale_s_per_div,
+        "rigol_effective_scale_s_per_div": capture_cfg.rigol_horizontal_scale_s_per_div,
+    }
     connected = robot is not None
     success = False
 
@@ -280,6 +336,13 @@ def run_trial(cfg, case, run_dir, robot=None):
             print(
                 f"[ROBOT] Global speed factor set to "
                 "100% (explicit case settings)", flush=True
+            )
+        if manager.rigol is not None:
+            print(
+                f"[RIGOL] Effective timebase: "
+                f"{capture_cfg.rigol_horizontal_scale_s_per_div} s/div "
+                f"(requested: {cfg.rigol_horizontal_scale_s_per_div})",
+                flush=True,
             )
         print("[LOGGING] Starting robot, Rigol and camera loggers", flush=True)
         manager.start()
@@ -422,6 +485,8 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
             ("payload_kg", "Payload kg"),
             ("csv_path", "Trajectory CSV"),
             ("minimum_duration_s", "Min duration s"),
+            ("duration_s", "Planned duration s"),
+            ("expected_peak_speed_mm_s", "Planned peak TCP mm/s"),
             ("aheadtime", "Aheadtime"),
             ("gain", "Gain"),
             ("global_speed_factor", "Global speed %"),
@@ -506,7 +571,14 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
                     "global_trial": global_index,
                     "status": "planned",
                 }
-                for key in ("aheadtime", "gain", "global_speed_factor"):
+                for key in (
+                    "aheadtime", "gain", "global_speed_factor",
+                    "duration_s", "expected_points",
+                    "expected_peak_speed_mm_s",
+                    "expected_peak_acceleration_mm_s2",
+                    "expected_peak_jerk_mm_s3",
+                    "exceeds_movel_fast_speed",
+                ):
                     if key in case:
                         record[key] = case[key]
                 if case.get("mode") in ("movel", "movej"):
@@ -517,11 +589,31 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
                     )
                     record["command_v_percent"] = 100
 
+                if case.get("exceeds_movel_fast_speed"):
+                    log("    [CAUTION] Planned peak TCP speed exceeds the "
+                        "fastest measured MoveL plateau (~470.5 mm/s). "
+                        "Physical motion requires explicit safety review.")
                 if execute:
                     try:
                         log("    [RUNNING] Robot and acquisition sequence")
                         result = run_trial(cfg, case, folder, robot=robot)
                         record["status"] = result["status"]
+                        record["rigol_effective_scale_s_per_div"] = (
+                            result.get("rigol_effective_scale_s_per_div")
+                        )
+                        for field in (
+                            "planned_trajectory_duration_s",
+                            "expected_stream_period_s",
+                            "first_to_last_command_s",
+                            "wait_for_robot_idle_s",
+                            "late_commands",
+                            "maximum_lateness_ms",
+                            "effective_aheadtime",
+                            "effective_gain",
+                        ):
+                            value = result.get("motion", {}).get(field)
+                            if value is not None:
+                                record[field] = value
 
                         if record["status"] not in ("completed", "partial"):
                             abort = True
@@ -530,7 +622,13 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
                         record["status"] = "failed"
                         record["error"] = repr(exc)
                         abort = True
+                        details = traceback.format_exc()
+                        (folder / "trial_error_traceback.txt").write_text(
+                            details, encoding="utf-8"
+                        )
                         log(f"    [ERROR] {exc!r}")
+                        log(f"    [TRACEBACK] Saved to {folder / 'trial_error_traceback.txt'}")
+                        print(details, flush=True)
 
                     finally:
                         log("    [ANALYSIS] Calculating metrics")
