@@ -12,6 +12,8 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .h264_mkv_repair import repair_recording
+
 
 def utc_now():
     return datetime.now(timezone.utc).isoformat()
@@ -200,6 +202,17 @@ class RTSPVideoRecorder:
             frames = None
         if frames == 0:
             errors.append("FFmpeg reported zero video frames")
+        # Check the video contents, not just the muxer's reported frame count.
+        # A camera can insert invalid zero-length H.264 NAL units even when
+        # FFmpeg reports hundreds of successfully copied packets.
+        validation = {"validation": "not_checked"}
+        if size >= 1024 and frames != 0:
+            try:
+                validation = repair_recording(self.output_path, self.ffmpeg_bin)
+                size = self.output_path.stat().st_size
+            except Exception as exc:
+                errors.append(f"Camera validation/repair failed: {exc}")
+                validation = {"validation": "failed", "error": str(exc)}
         self.error = "; ".join(errors) if errors else None
         result = {
             "path": str(self.output_path),
@@ -211,6 +224,7 @@ class RTSPVideoRecorder:
             "ffmpeg_log": str(self.log_path),
             "ffmpeg_progress": str(self.progress_path),
             "frame_count": frames,
+            "video_validation": validation,
             "received_frames": None,
             "encoded_fps": None,
             "file_size_bytes": size,
@@ -225,7 +239,7 @@ class RTSPVideoRecorder:
             ),
             "note": (
                 "Packet arrival-time timestamps are not camera capture timestamps "
-                "and are not synchronized to robot motion. With reordered B-frames "
+                "and are not synchronized to robot motion. The video is "
                 "wallclock timestamps may be unsuitable; check the FFmpeg log "
                 "and inspect actual playback."
             ),
