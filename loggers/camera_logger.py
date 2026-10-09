@@ -238,10 +238,10 @@ class RTSPVideoRecorder:
                 if self.recording_start_s is not None else None
             ),
             "note": (
-                "Packet arrival-time timestamps are not camera capture timestamps "
-                "and are not synchronized to robot motion. The video is "
-                "wallclock timestamps may be unsuitable; check the FFmpeg log "
-                "and inspect actual playback."
+                "RTSP/host packet timestamps are not camera exposure times, "
+                "and are not synchronized to robot or Rigol measurements. "
+                "Check video_validation for decodability and repair status, "
+                "and preserve ffmpeg_camera.log for source diagnostics."
             ),
             "error": self.error,
         }
