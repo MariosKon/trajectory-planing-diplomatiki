@@ -1,0 +1,15 @@
+host_time_s,host_utc,event,details
+7.258992399991257,2026-10-09T20:43:13.280751+00:00,ROBOT_LOGGER_STARTED,
+7.260147099994356,2026-10-09T20:43:13.281750+00:00,CAMERA_STARTED,Camera started before robot feedback
+7.261173499980941,2026-10-09T20:43:13.282746+00:00,RIGOL_STARTED,Rigol started before robot feedback
+7.762803499994334,2026-10-09T20:43:13.784204+00:00,ROBOT_PREMOTION_READY,lead_s=0.500736
+7.763923499995144,2026-10-09T20:43:13.785164+00:00,RIGOL_PREMOTION_READY,lead_s=1.531168
+7.764966099988669,2026-10-09T20:43:13.786163+00:00,RIGOL_TO_MOTION_LEAD,seconds=1.532325
+7.766481400001794,2026-10-09T20:43:13.788158+00:00,MOTION_START,"{'name': 'cubic_T2p31', 'mode': 'csv', 'csv_path': 'C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\cubic\\points_cubic_T2p31.csv', 'csv_sha256': '65b4396e39790376126e509016fcf384f2c9d33ca189b1ea931b631822bac3b2', 'duration_s': 2.31, 'expected_points': 78, 'expected_peak_speed_mm_s': 519.4805194805194, 'expected_peak_acceleration_mm_s2': 899.5333670658346, 'expected_peak_jerk_mm_s3': 778.8167680223676, 'exceeds_movel_fast_speed': True, 'global_speed_factor': 100, 'trajectory_profile': 'cubic', 'reference_case_name': 'cubic_T2p31', 'source_case_index': 3, 'payload_phase': 'baseline', 'physical_payload_mass_kg': None, 'matrix_case_index': 2, 'matrix_case_count': 6}"
+7.769504199997755,2026-10-09T20:43:13.791148+00:00,MOTION_PARAMETERS,servo_t_s=0.03;aheadtime=20.0;gain=300.0;planned_duration_s=2.31;global_speed=100
+7.783971500000916,2026-10-09T20:43:13.805111+00:00,SERVO_FIRST_COMMAND_SENT,mode=ServoP;period_s=0.030000
+10.08485230000224,2026-10-09T20:43:16.106343+00:00,SERVO_LAST_COMMAND_SENT,count=78;scheduled_duration_s=2.310000
+10.108077599987155,2026-10-09T20:43:16.129282+00:00,SERVO_STREAM_PERIOD_END,count=78
+10.93243899999652,2026-10-09T20:43:16.953588+00:00,SERVO_ROBOT_IDLE,wait_s=0.823061
+10.93380349999643,2026-10-09T20:43:16.955584+00:00,MOTION_END,
+11.935659199982183,2026-10-09T20:43:17.957094+00:00,ROBOT_LOGGER_STOPPING,

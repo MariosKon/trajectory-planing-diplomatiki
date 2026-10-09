@@ -1,0 +1,15 @@
+host_time_s,host_utc,event,details
+7.087744599994039,2026-10-09T21:23:14.124579+00:00,ROBOT_LOGGER_STARTED,
+7.088894599990454,2026-10-09T21:23:14.125578+00:00,CAMERA_STARTED,Camera started before robot feedback
+7.090033099986613,2026-10-09T21:23:14.126574+00:00,RIGOL_STARTED,Rigol started before robot feedback
+7.59201709998888,2026-10-09T21:23:14.629327+00:00,ROBOT_PREMOTION_READY,lead_s=0.500531
+7.59354319999693,2026-10-09T21:23:14.630321+00:00,RIGOL_PREMOTION_READY,lead_s=1.537042
+7.595915099984268,2026-10-09T21:23:14.633315+00:00,RIGOL_TO_MOTION_LEAD,seconds=1.539305
+7.597567499993602,2026-10-09T21:23:14.634315+00:00,MOTION_START,"{'name': 'cubic_T2p31', 'mode': 'csv', 'csv_path': 'C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\cubic\\points_cubic_T2p31.csv', 'csv_sha256': '65b4396e39790376126e509016fcf384f2c9d33ca189b1ea931b631822bac3b2', 'duration_s': 2.31, 'expected_points': 78, 'expected_peak_speed_mm_s': 519.4805194805194, 'expected_peak_acceleration_mm_s2': 899.5333670658346, 'expected_peak_jerk_mm_s3': 778.8167680223676, 'exceeds_movel_fast_speed': True, 'global_speed_factor': 100, 'trajectory_profile': 'cubic', 'reference_case_name': 'cubic_T2p31', 'source_case_index': 3, 'payload_phase': 'empty', 'physical_payload_mass_kg': None, 'matrix_case_index': 2, 'matrix_case_count': 6}"
+7.602759600005811,2026-10-09T21:23:14.639301+00:00,MOTION_PARAMETERS,servo_t_s=0.03;aheadtime=20.0;gain=300.0;planned_duration_s=2.31;global_speed=100
+7.615320299984887,2026-10-09T21:23:14.652266+00:00,SERVO_FIRST_COMMAND_SENT,mode=ServoP;period_s=0.030000
+9.915961699996842,2026-10-09T21:23:16.953246+00:00,SERVO_LAST_COMMAND_SENT,count=78;scheduled_duration_s=2.310000
+9.939382699987618,2026-10-09T21:23:16.976217+00:00,SERVO_STREAM_PERIOD_END,count=78
+10.661654600000475,2026-10-09T21:23:17.698365+00:00,SERVO_ROBOT_IDLE,wait_s=0.721337
+10.66292629999225,2026-10-09T21:23:17.700324+00:00,MOTION_END,
+11.665032899996731,2026-10-09T21:23:18.701645+00:00,ROBOT_LOGGER_STOPPING,

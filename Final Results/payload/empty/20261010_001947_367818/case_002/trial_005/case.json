@@ -1,0 +1,20 @@
+{
+  "name": "cubic_T2p31",
+  "mode": "csv",
+  "csv_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\cubic\\points_cubic_T2p31.csv",
+  "csv_sha256": "65b4396e39790376126e509016fcf384f2c9d33ca189b1ea931b631822bac3b2",
+  "duration_s": 2.31,
+  "expected_points": 78,
+  "expected_peak_speed_mm_s": 519.4805194805194,
+  "expected_peak_acceleration_mm_s2": 899.5333670658346,
+  "expected_peak_jerk_mm_s3": 778.8167680223676,
+  "exceeds_movel_fast_speed": true,
+  "global_speed_factor": 100,
+  "trajectory_profile": "cubic",
+  "reference_case_name": "cubic_T2p31",
+  "source_case_index": 3,
+  "payload_phase": "empty",
+  "physical_payload_mass_kg": null,
+  "matrix_case_index": 2,
+  "matrix_case_count": 6
+}

@@ -1,0 +1,15 @@
+host_time_s,host_utc,event,details
+7.094509600021411,2026-10-09T21:24:20.251156+00:00,ROBOT_LOGGER_STARTED,
+7.095649499999126,2026-10-09T21:24:20.252151+00:00,CAMERA_STARTED,Camera started before robot feedback
+7.096737800020492,2026-10-09T21:24:20.253147+00:00,RIGOL_STARTED,Rigol started before robot feedback
+7.598276800010353,2026-10-09T21:24:20.754538+00:00,ROBOT_PREMOTION_READY,lead_s=0.500293
+7.599860300018918,2026-10-09T21:24:20.756533+00:00,RIGOL_PREMOTION_READY,lead_s=1.522122
+7.601337900006911,2026-10-09T21:24:20.758527+00:00,RIGOL_TO_MOTION_LEAD,seconds=1.524046
+7.602537500002654,2026-10-09T21:24:20.759525+00:00,MOTION_START,"{'name': 'quintic_T2p31', 'mode': 'csv', 'csv_path': 'C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\quintic\\points_quintic_T2p31.csv', 'csv_sha256': '9f02fd9b3cb373bab971b82f9b96312347f7358d7d474789628b5bd43af88124', 'duration_s': 2.31, 'expected_points': 78, 'expected_peak_speed_mm_s': 649.3506493506493, 'expected_peak_acceleration_mm_s2': 865.5763860341833, 'expected_peak_jerk_mm_s3': 3894.0838401118376, 'exceeds_movel_fast_speed': True, 'global_speed_factor': 100, 'trajectory_profile': 'quintic', 'reference_case_name': 'quintic_T2p31', 'source_case_index': 3, 'payload_phase': 'empty', 'physical_payload_mass_kg': None, 'matrix_case_index': 3, 'matrix_case_count': 6}"
+7.606785100011621,2026-10-09T21:24:20.763511+00:00,MOTION_PARAMETERS,servo_t_s=0.03;aheadtime=20.0;gain=300.0;planned_duration_s=2.31;global_speed=100
+7.62160220000078,2026-10-09T21:24:20.778472+00:00,SERVO_FIRST_COMMAND_SENT,mode=ServoP;period_s=0.030000
+9.922255400015274,2026-10-09T21:24:23.078939+00:00,SERVO_LAST_COMMAND_SENT,count=78;scheduled_duration_s=2.310000
+9.944245799997589,2026-10-09T21:24:23.100878+00:00,SERVO_STREAM_PERIOD_END,count=78
+10.57171330001438,2026-10-09T21:24:23.728283+00:00,SERVO_ROBOT_IDLE,wait_s=0.626578
+10.572872599994298,2026-10-09T21:24:23.729245+00:00,MOTION_END,
+11.574252100021113,2026-10-09T21:24:24.730684+00:00,ROBOT_LOGGER_STOPPING,

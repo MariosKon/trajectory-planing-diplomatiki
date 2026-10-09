@@ -1,0 +1,29 @@
+{
+  "name": "movel",
+  "mode": "movel",
+  "start": [
+    -600,
+    -400,
+    250,
+    -90,
+    0,
+    90
+  ],
+  "target": [
+    -600,
+    400,
+    250,
+    -90,
+    0,
+    90
+  ],
+  "speed": 100,
+  "acceleration": 100,
+  "trajectory_profile": "movel",
+  "reference_case_name": "movel",
+  "source_case_index": 9,
+  "payload_phase": "full",
+  "physical_payload_mass_kg": null,
+  "matrix_case_index": 1,
+  "matrix_case_count": 6
+}

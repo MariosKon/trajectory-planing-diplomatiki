@@ -1,0 +1,15 @@
+host_time_s,host_utc,event,details
+7.204700200003572,2026-10-09T20:45:25.590103+00:00,ROBOT_LOGGER_STARTED,
+7.205922599998303,2026-10-09T20:45:25.591100+00:00,CAMERA_STARTED,Camera started before robot feedback
+7.206782099994598,2026-10-09T20:45:25.592102+00:00,RIGOL_STARTED,Rigol started before robot feedback
+7.707953900011489,2026-10-09T20:45:26.093109+00:00,ROBOT_PREMOTION_READY,lead_s=0.500252
+7.709071100020083,2026-10-09T20:45:26.094070+00:00,RIGOL_PREMOTION_READY,lead_s=1.513063
+7.7104993000102695,2026-10-09T20:45:26.096069+00:00,RIGOL_TO_MOTION_LEAD,seconds=1.514201
+7.711589200014714,2026-10-09T20:45:26.097063+00:00,MOTION_START,"{'name': 'quintic_T2p31', 'mode': 'csv', 'csv_path': 'C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\quintic\\points_quintic_T2p31.csv', 'csv_sha256': '9f02fd9b3cb373bab971b82f9b96312347f7358d7d474789628b5bd43af88124', 'duration_s': 2.31, 'expected_points': 78, 'expected_peak_speed_mm_s': 649.3506493506493, 'expected_peak_acceleration_mm_s2': 865.5763860341833, 'expected_peak_jerk_mm_s3': 3894.0838401118376, 'exceeds_movel_fast_speed': True, 'global_speed_factor': 100, 'trajectory_profile': 'quintic', 'reference_case_name': 'quintic_T2p31', 'source_case_index': 3, 'payload_phase': 'baseline', 'physical_payload_mass_kg': None, 'matrix_case_index': 3, 'matrix_case_count': 6}"
+7.71432180001284,2026-10-09T20:45:26.100054+00:00,MOTION_PARAMETERS,servo_t_s=0.03;aheadtime=20.0;gain=300.0;planned_duration_s=2.31;global_speed=100
+7.727620499994373,2026-10-09T20:45:26.113022+00:00,SERVO_FIRST_COMMAND_SENT,mode=ServoP;period_s=0.030000
+10.031814800022403,2026-10-09T20:45:28.417136+00:00,SERVO_LAST_COMMAND_SENT,count=78;scheduled_duration_s=2.310000
+10.054003099998226,2026-10-09T20:45:28.439076+00:00,SERVO_STREAM_PERIOD_END,count=78
+10.776069000014104,2026-10-09T20:45:29.161077+00:00,SERVO_ROBOT_IDLE,wait_s=0.720929
+10.777406000008341,2026-10-09T20:45:29.163029+00:00,MOTION_END,
+11.779402500018477,2026-10-09T20:45:30.164389+00:00,ROBOT_LOGGER_STOPPING,

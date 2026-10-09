@@ -1,0 +1,93 @@
+{
+  "status": "completed",
+  "case": {
+    "name": "movel",
+    "mode": "movel",
+    "start": [
+      -600,
+      -400,
+      250,
+      -90,
+      0,
+      90
+    ],
+    "target": [
+      -600,
+      400,
+      250,
+      -90,
+      0,
+      90
+    ],
+    "speed": 100,
+    "acceleration": 100,
+    "trajectory_profile": "movel",
+    "reference_case_name": "movel",
+    "source_case_index": 9,
+    "payload_phase": "empty",
+    "physical_payload_mass_kg": null,
+    "matrix_case_index": 1,
+    "matrix_case_count": 6
+  },
+  "rigol_requested_scale_s_per_div": 0.5,
+  "rigol_effective_scale_s_per_div": 0.5,
+  "motion": {
+    "command_count": 1,
+    "response": "0,{8365},MovL(pose={-600.000000,400.000000,250.000000,-90.000000,0.000000,90.000000},a=100,v=100);",
+    "speed_percent": 100,
+    "global_speed_factor": 100,
+    "command_v_percent": 100,
+    "acceleration_percent": 100,
+    "elapsed_s": 2.292463499994483
+  },
+  "logging": {
+    "robot": {
+      "received_packets": 491,
+      "invalid_packets": 0,
+      "dropped_rows": 0,
+      "error_samples": 0,
+      "collision_samples": 0
+    },
+    "rigol": {
+      "resource": "USB0::0x1AB1::0x0517::DS1ZE264511439::INSTR",
+      "samples": 1200,
+      "error": null,
+      "warnings": [
+        "Power and energy use NORM display data; not motion-only energy. RAW scaling remains unverified."
+      ],
+      "power_trace_source": "NORM_DISPLAY",
+      "power_calibrated": true,
+      "power_data_valid": true
+    },
+    "camera": {
+      "path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\payload\\empty\\20261010_001947_367818\\case_001\\trial_005\\camera.mkv",
+      "format": "matroska",
+      "codec": "copy",
+      "rtsp_transport": "tcp",
+      "timestamp_mode": "host_wallclock_on_packet_arrival",
+      "startup_confirmed_by": "ffmpeg_frame_progress",
+      "ffmpeg_log": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\payload\\empty\\20261010_001947_367818\\case_001\\trial_005\\ffmpeg_camera.log",
+      "ffmpeg_progress": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\payload\\empty\\20261010_001947_367818\\case_001\\trial_005\\ffmpeg_camera_progress.txt",
+      "frame_count": 386,
+      "video_validation": {
+        "validation": "ffmpeg_decoded",
+        "decoded_frames": 386,
+        "empty_h264_nals_removed": 14,
+        "original_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\payload\\empty\\20261010_001947_367818\\case_001\\trial_005\\camera_original.mkv",
+        "note": "Video timestamps are host/RTSP estimates, not synchronized capture times."
+      },
+      "received_frames": null,
+      "encoded_fps": null,
+      "file_size_bytes": 4050249,
+      "host_start_perf_s": 134774.8068221,
+      "host_end_perf_s": 134788.8465752,
+      "host_start_utc": "2026-10-09T21:21:19.328897+00:00",
+      "host_end_utc": "2026-10-09T21:21:33.369108+00:00",
+      "startup_elapsed_s": 2.8832048999902327,
+      "recorded_wall_duration_s": 14.039753099990776,
+      "note": "RTSP/host packet timestamps are not camera exposure times, and are not synchronized to robot or Rigol measurements. Check video_validation for decodability and repair status, and preserve ffmpeg_camera.log for source diagnostics.",
+      "error": null
+    }
+  },
+  "error_ids": "0,{[]},GetErrorID();"
+}

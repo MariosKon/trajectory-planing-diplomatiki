@@ -1,0 +1,15 @@
+host_time_s,host_utc,event,details
+8.099996300006751,2026-10-09T19:59:57.797255+00:00,ROBOT_LOGGER_STARTED,
+8.101448400004301,2026-10-09T19:59:57.798248+00:00,CAMERA_STARTED,Camera started before robot feedback
+8.102907899999991,2026-10-09T19:59:57.800244+00:00,RIGOL_STARTED,Rigol started before robot feedback
+8.604874000011478,2026-10-09T19:59:58.302201+00:00,ROBOT_PREMOTION_READY,lead_s=0.500515
+8.606385300008697,2026-10-09T19:59:58.303181+00:00,RIGOL_PREMOTION_READY,lead_s=1.527376
+8.608087000000523,2026-10-09T19:59:58.305168+00:00,RIGOL_TO_MOTION_LEAD,seconds=1.528933
+8.612006100011058,2026-10-09T19:59:58.309166+00:00,MOTION_START,"{'name': 'ruckig_sweep_08', 'study': 'L9', 'matlab_matrix_path': 'C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\piecewise_sweep\\case_matrix.csv', 'matlab_matrix_sha256': '6b572f2b5c382277f6af9ec23b690f4193b0942693015b6ea7bd238327ac174c', 'velocity_limit_mm_s': 460.0, 'acceleration_limit_mm_s2': 800.0, 'global_speed_factor': 100, 'exceeds_movel_fast_speed': False, 'jerk_limit_mm_s3': 6000.0, 'mode': 'ruckig', 'start': [-600.0, -400.0, 250.0, -90.0, 0.0, 90.0], 'target': [-600.0, 400.0, 250.0, -90.0, 0.0, 90.0], 'max_velocity': [460.0, 460.0, 460.0, 460.0, 460.0, 460.0], 'max_acceleration': [800.0, 800.0, 800.0, 800.0, 800.0, 800.0], 'max_jerk': [6000.0, 6000.0, 6000.0, 6000.0, 6000.0, 6000.0], 'minimum_duration_s': None}"
+8.615273200004594,2026-10-09T19:59:58.312155+00:00,MOTION_PARAMETERS,"servo_t_s=0.03;aheadtime=20.0;gain=300.0;ruckig_minimum_duration_s=None;max_velocity=[460.0, 460.0, 460.0, 460.0, 460.0, 460.0];max_acceleration=[800.0, 800.0, 800.0, 800.0, 800.0, 800.0];max_jerk=[6000.0, 6000.0, 6000.0, 6000.0, 6000.0, 6000.0];global_speed=100"
+8.634848300003796,2026-10-09T19:59:58.332100+00:00,SERVO_FIRST_COMMAND_SENT,mode=ServoP;period_s=0.030000
+11.051278400002047,2026-10-09T20:00:00.747918+00:00,SERVO_LAST_COMMAND_SENT,count=82;scheduled_duration_s=2.430000
+11.075246100008371,2026-10-09T20:00:00.771852+00:00,SERVO_STREAM_PERIOD_END,count=82
+11.694288600003347,2026-10-09T20:00:01.390820+00:00,SERVO_ROBOT_IDLE,wait_s=0.618051
+11.695395700007793,2026-10-09T20:00:01.391818+00:00,MOTION_END,
+12.696520600002259,2026-10-09T20:00:02.393176+00:00,ROBOT_LOGGER_STOPPING,
