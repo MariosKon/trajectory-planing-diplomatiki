@@ -1,4 +1,4 @@
-"""Offline regressions for the two-condition fastest-tested payload suite."""
+"""Offline regressions for the three-condition fastest-tested payload suite."""
 import contextlib
 import io
 import sys
@@ -8,7 +8,7 @@ from unittest.mock import patch
 import main
 from core.config import Config
 from experiments.helpers import cases_for
-from experiments.payload.experiment import FASTEST_TESTED_CASES
+from experiments.payload.experiment import FASTEST_TESTED_CASES, PHASES
 
 
 class PayloadCasesTests(unittest.TestCase):
@@ -19,9 +19,13 @@ class PayloadCasesTests(unittest.TestCase):
             "payload", cls.config, payload_phase="baseline",
             physical_payload_mass_kg=0.5,
         )
-        cls.changed = cases_for(
-            "payload", cls.config, payload_phase="changed",
+        cls.full = cases_for(
+            "payload", cls.config, payload_phase="full",
             physical_payload_mass_kg=0.9,
+        )
+        cls.empty = cases_for(
+            "payload", cls.config, payload_phase="empty",
+            physical_payload_mass_kg=0.2,
         )
 
     def test_exactly_six_fastest_tested_cases_in_order(self):
@@ -50,8 +54,9 @@ class PayloadCasesTests(unittest.TestCase):
         self.assertEqual(ruckig["jerk_limit_mm_s3"], 10000)
 
     def test_source_cases_remain_identical_across_phases(self):
-        for idx, ((profile, original_idx), before, after) in enumerate(
-            zip(FASTEST_TESTED_CASES, self.baseline, self.changed), 1
+        self.assertEqual(PHASES, ("baseline", "full", "empty"))
+        for idx, ((profile, original_idx), before, full, empty) in enumerate(
+            zip(FASTEST_TESTED_CASES, self.baseline, self.full, self.empty), 1
         ):
             original = cases_for(profile, self.config)[original_idx - 1]
             self.assertEqual(
@@ -103,20 +108,33 @@ class PayloadCLITests(unittest.TestCase):
         self.assertFalse(kwargs["execute"])
         self.assertIn("STOP AFTER BASELINE", output)
 
-    def test_changed_phase_is_separate_and_metadata_only(self):
+    def test_full_phase_is_separate_and_metadata_only(self):
         mock_batch, _ = self._invoke(
-            "--experiment", "payload", "--payload-phase", "changed",
+            "--experiment", "payload", "--payload-phase", "full",
             "--payload-mass-kg", "0.9", "--execute",
         )
         args, kwargs = mock_batch.call_args
-        self.assertEqual(args[1], "payload/changed")
+        self.assertEqual(args[1], "payload/full")
         self.assertEqual(args[3], 1)
         self.assertTrue(kwargs["execute"])
         self.assertTrue(all(
-            c["physical_payload_mass_kg"] == 0.9 and c["payload_phase"] == "changed"
+            c["physical_payload_mass_kg"] == 0.9 and c["payload_phase"] == "full"
             and "payload_kg" not in c
             for c in args[2]
         ))
+
+    def test_empty_phase_stays_separate(self):
+        mock_batch, _ = self._invoke(
+            "--experiment", "payload", "--payload-phase", "empty",
+            "--payload-mass-kg", "0.2", "--execute",
+        )
+        args, kwargs = mock_batch.call_args
+        self.assertEqual(args[1], "payload/empty")
+        self.assertEqual(len(args[2]), 6)
+        self.assertEqual(args[3], 1)
+        self.assertTrue(kwargs["execute"])
+        self.assertTrue(all(c["payload_phase"] == "empty"
+                            and c["physical_payload_mass_kg"] == 0.2 for c in args[2]))
 
     def test_execute_requires_explicit_phase(self):
         with patch.object(sys, "argv", [
