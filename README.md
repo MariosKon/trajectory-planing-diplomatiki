@@ -59,7 +59,19 @@ Optional `rigol_download_raw: true` is for debugging only; the DS1202Z-E RAW BYT
 
 ## MoveL / MoveJ
 
-Measured MoveL / MoveJ commands set the global speed factor to 100% and pass speed/acceleration percentages as individual movement arguments (`v`/`a`). Preparation and return-home use the slow global factor configured for those phases. Event records capture the requested motion settings and command response.
+MoveL / MoveJ cases use **one speed scaling mechanism**: `SpeedFactor(case["speed"])` applies the requested speed percentage globally, while the individual movement has `v=100`. The individual movement still uses `a=case["acceleration"]`. This addresses a regression in which `SpeedFactor(100)` combined with varying `v` produced almost identical measured MoveL TCP speeds on the tested controller. An explicit case `global_speed_factor` still takes precedence. ServoP/ServoJ CSV cases retain their existing speed-factor behavior.
+
+`MOTION_PARAMETERS`, `result.json`, and `trial_summary.csv` record the effective global factor and local movement parameters. Preparation and return-home use the slow settings configured for those phases. The new control strategy is **not yet validated on physical hardware**; `SpeedFactor` may also influence other motion dynamics, so do not assume changing `a` changes acceleration independently.
+
+Before rerunning the full 3×3 MoveL matrix, compare one supervised repetition of cases 1, 4, and 7 (same acceleration 50%, speed 50/75/100%). Do not execute them as an unattended batch:
+
+```powershell
+python main.py --experiment movel --case 1 --repetitions 1 --execute
+python main.py --experiment movel --case 4 --repetitions 1 --execute
+python main.py --experiment movel --case 7 --repetitions 1 --execute
+```
+
+Verify each recorded `TCPSpeedTarget` and `TCPSpeedActual` profile and movement duration before proceeding. Previous measurements using `SpeedFactor(100), v=case_speed` and older measurements using *both* `SpeedFactor(case_speed), v=case_speed` are not directly equivalent to these tests.
 
 Hardware movement completion and limits must be checked in supervised single-run tests. Do not start an unattended batch on unverified paths.
 
