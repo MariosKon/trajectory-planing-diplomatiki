@@ -22,7 +22,7 @@ class PiecewiseTimeTests(unittest.TestCase):
     def test_cases_match_polynomial_reference_times(self):
         for profile in ("trapezoidal", "double_s", "ruckig"):
             with self.subTest(profile=profile):
-                cases = cases_for(profile, self.cfg)
+                cases = cases_for(f"{profile}_matched", self.cfg)
                 self.assertEqual(len(cases), 3)
                 self.assertEqual([c["duration_s"] for c in cases], [3.93, 2.79, 2.31])
                 self.assertEqual([c["expected_peak_speed_mm_s"] for c in cases],
@@ -34,7 +34,7 @@ class PiecewiseTimeTests(unittest.TestCase):
         for profile in ("trapezoidal", "double_s"):
             for (label, duration), speed in zip(DURATION_CASES, PEAK_SPEEDS_MM_S):
                 with self.subTest(profile=profile, duration=duration):
-                    case = next(c for c in cases_for(profile, self.cfg)
+                    case = next(c for c in cases_for(f"{profile}_matched", self.cfg)
                                 if c["duration_s"] == duration)
                     self.assertEqual(case["expected_points"],
                                      round(duration / .03) + 1)
@@ -70,10 +70,10 @@ class PiecewiseTimeTests(unittest.TestCase):
 
     def test_invalid_config_and_corrupted_samples_rejected(self):
         with self.assertRaisesRegex(ValueError, "servo_time_s"):
-            cases_for("trapezoidal", Config(servo_time_s=0.02))
+            cases_for("trapezoidal_matched", Config(servo_time_s=0.02))
         with self.assertRaisesRegex(ValueError, "target"):
-            cases_for("ruckig", Config(target=[-600, 350, 250, -90, 0, 90]))
-        original = cases_for("double_s", self.cfg)[0]["csv_path"]
+            cases_for("ruckig_matched", Config(target=[-600, 350, 250, -90, 0, 90]))
+        original = cases_for("double_s_matched", self.cfg)[0]["csv_path"]
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "corrupt.csv"
             rows = Path(original).read_text(encoding="utf-8").splitlines()
@@ -85,7 +85,7 @@ class PiecewiseTimeTests(unittest.TestCase):
                 verify_reference("double_s", path, 3.93, 300)
 
     def test_sha_preflight_prevents_changed_data(self):
-        case = dict(cases_for("trapezoidal", self.cfg)[0])
+        case = dict(cases_for("trapezoidal_matched", self.cfg)[0])
         case["csv_sha256"] = "0" * 64
         with self.assertRaisesRegex(ValueError, "changed after case"):
             run_trial(self.cfg, case, Path("unused"))

@@ -1,5 +1,10 @@
 # Matched-time piecewise study (Trapezoidal / Double-S / Ruckig)
 
+This original three-case comparison remains available as
+`trapezoidal_matched`, `double_s_matched`, `ruckig_matched`.
+Default unsuffixed experiment names now select the
+[nine-case parameter sweep](piecewise-parameter-sweep.md).
+
 ## Motivation and source
 
 The hardware comparison uses the same Cartesian 800 mm Y translation as the
@@ -65,12 +70,12 @@ CSV is needed; it reopens each export and verifies sampled values.
 
 ```powershell
 python -m unittest discover -s tests -v
-python main.py --experiment trapezoidal --list-cases
-python main.py --experiment double_s --list-cases
-python main.py --experiment ruckig --list-cases
-python main.py --experiment trapezoidal --case 1 --repetitions 1
-python main.py --experiment double_s --case 1 --repetitions 1
-python main.py --experiment ruckig --case 1 --repetitions 1
+python main.py --experiment trapezoidal_matched --list-cases
+python main.py --experiment double_s_matched --list-cases
+python main.py --experiment ruckig_matched --list-cases
+python main.py --experiment trapezoidal_matched --case 1 --repetitions 1
+python main.py --experiment double_s_matched --case 1 --repetitions 1
+python main.py --experiment ruckig_matched --case 1 --repetitions 1
 ```
 
 No `--execute` means no physical robot motion. Existing `--csv` overrides
@@ -86,9 +91,9 @@ only if the previous case is physically acceptable. Five repetitions per
 validated case give **45 executions** (3 profiles x 3 cases x 5 repeats).
 
 ```powershell
-python main.py --experiment trapezoidal --case 1 --repetitions 1 --execute
-python main.py --experiment double_s --case 1 --repetitions 1 --execute
-python main.py --experiment ruckig --case 1 --repetitions 1 --execute
+python main.py --experiment trapezoidal_matched --case 1 --repetitions 1 --execute
+python main.py --experiment double_s_matched --case 1 --repetitions 1 --execute
+python main.py --experiment ruckig_matched --case 1 --repetitions 1 --execute
 # Repeat individually with --case 2 and finally --case 3 after review.
 # After validation use --repetitions 5 for the selected case.
 ```

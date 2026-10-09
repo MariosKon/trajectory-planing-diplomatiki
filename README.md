@@ -35,7 +35,7 @@ python main.py --experiment ruckig --repetitions 1
 python main.py --experiment cubic --csv PATH_TO_POINTS.csv --repetitions 1
 ```
 
-Cubic and Quintic expose three fixed-time reference cases each by default; `--csv PATH` still selects a custom single-case CSV. **Trapezoidal, Double-S and online Ruckig now also expose three matched-time cases** (3.93, 2.79 and 2.31 seconds) using the same Cartesian reference, selected ServoP tuning and documented velocity / acceleration / jerk constraints. Trapezoidal and Double-S still support `--csv PATH` to run an explicitly supplied single-case CSV. The dedicated `servop_behavior` experiment has its own MATLAB cubic generator and committed reference CSV in `experiments/servop_behavior/`; it varies servo tracking parameters while keeping the same Cartesian MoveL path. MoveJ still requires validated joint-space endpoints; the payload helper currently defines only one load. Camera-video analysis is not yet implemented.
+Cubic and Quintic expose three fixed-time reference cases each by default; `--csv PATH` still selects a custom single-case CSV. **Trapezoidal, Double-S and online Ruckig expose nine V/A/J sweep cases by default and retain three matched-time reference cases** (3.93, 2.79 and 2.31 seconds) using the same Cartesian reference, selected ServoP tuning and documented velocity / acceleration / jerk constraints. Trapezoidal and Double-S still support `--csv PATH` to run an explicitly supplied single-case CSV. The dedicated `servop_behavior` experiment has its own MATLAB cubic generator and committed reference CSV in `experiments/servop_behavior/`; it varies servo tracking parameters while keeping the same Cartesian MoveL path. MoveJ still requires validated joint-space endpoints; the payload helper currently defines only one load. Camera-video analysis is not yet implemented.
 
 ## Offline polynomial study: fixed-time Cubic and Quintic
 
@@ -105,27 +105,29 @@ The additional time seen in the first Cubic tests cannot be identified purely as
 
 The main branch's selected ServoP defaults, **aheadtime=20 and gain=300**, are retained by this study (unless explicitly overridden per case). ServoJ and historical gain-sweep cases keep their distinct defaults. Verify the effective values in `commands.csv` and `trial_summary.csv` before evaluating smoothness.
 
-## Matched-time piecewise tests (Trapezoidal / Double-S / Ruckig)
+## Piecewise V/A/J sweep and matched-time control
 
-See [the experimental protocol](docs/piecewise-test-plan.md) for the exact
-trajectory equations, acceleration and jerk limits, CSV generation, safety
-checks, interpretation of the prior Cubic/Quintic data, and suggested
-physical-test sequence. The three profiles use the same 30 ms command grid
-and 800 mm TCP translation as the polynomial study.
+The [nine-case parameter sweep](docs/piecewise-parameter-sweep.md) varies
+velocity, acceleration and jerk limits (L9 design). The original
+[three-case matched-time study](docs/piecewise-test-plan.md) remains
+available as `trapezoidal_matched`, `double_s_matched` and
+`ruckig_matched`. Both use the same Cartesian 800 mm path, 30 ms command
+period and ServoP tuning as the polynomial experiments.
 
 ```powershell
 python main.py --experiment trapezoidal --list-cases
 python main.py --experiment double_s --list-cases
 python main.py --experiment ruckig --list-cases
 python main.py --experiment double_s --case 1 --repetitions 1
+python main.py --experiment double_s_matched --list-cases
 ```
 
 Real hardware is never commanded without `--execute`. Begin with supervised
-single repetitions before moving to faster settings. For the 3.93-second
-profile, use a separate 1.0 s/div Rigol configuration to avoid the
-already-observed truncated power captures at 0.5 s/div. Do not mix
-6-second and 12-second NORM-display signals in the same unadjusted
-high-frequency smoothness ranking.
+single repetitions before moving to faster settings. For the sweep, use a **common 1.0 s/div Rigol configuration** across
+all nine cases (or another validated common timebase). The 3.93-second
+matched-time profiles also need a longer Rigol span than the incomplete
+previous 0.5 s/div captures. Do not compare mixed NORM-display timebases
+without appropriate resampling and alignment.
 
 ## Current measurement configuration
 

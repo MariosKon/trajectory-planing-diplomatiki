@@ -14,9 +14,15 @@ def cases_for(name, cfg, csv_path=None):
         from experiments.servop_behavior.experiment import build_cases
         return build_cases(cfg, csv_path)
 
-    if name in ("trapezoidal", "double_s", "ruckig") and csv_path is None:
+    if name in ("trapezoidal_matched", "double_s_matched", "ruckig_matched"):
+        if csv_path is not None:
+            raise ValueError("Matched-time experiment does not accept --csv")
         from experiments.piecewise_fixed_time import piecewise_cases
-        return piecewise_cases(name, cfg)
+        return piecewise_cases(name.removesuffix("_matched"), cfg)
+
+    if name in ("trapezoidal", "double_s", "ruckig") and csv_path is None:
+        from experiments.piecewise_parameter_study import sweep_cases
+        return sweep_cases(name, cfg)
 
     if name == "ruckig" and csv_path is not None:
         raise ValueError("Ruckig is online and does not accept --csv")
