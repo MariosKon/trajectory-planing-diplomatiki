@@ -147,13 +147,34 @@ class PayloadCLITests(unittest.TestCase):
                 main.main()
         self.assertEqual(e.exception.code, 2)
 
-    def test_reject_multiple_payload_repetitions(self):
-        with patch.object(sys, "argv", [
-                "main.py", "--experiment", "payload", "--repetitions", "2",
-            ]), contextlib.redirect_stderr(io.StringIO()):
-            with self.assertRaises(SystemExit) as e:
-                main.main()
-        self.assertEqual(e.exception.code, 2)
+    def test_five_repetitions_allowed_for_each_payload_condition(self):
+        for phase in ("baseline", "full", "empty"):
+            with self.subTest(phase=phase):
+                mock_batch, _ = self._invoke(
+                    "--experiment", "payload",
+                    "--payload-phase", phase,
+                    "--repetitions", "5",
+                    "--execute",
+                )
+                args, kwargs = mock_batch.call_args
+                self.assertEqual(args[1], f"payload/{phase}")
+                self.assertEqual(len(args[2]), 6)
+                self.assertEqual(args[3], 5)
+                self.assertEqual(len(args[2]) * args[3], 30)
+                self.assertTrue(kwargs["execute"])
+
+    def test_reject_nonpositive_payload_repetitions(self):
+        for invalid in ("0", "-1"):
+            with self.subTest(invalid=invalid):
+                with patch.object(sys, "argv", [
+                        "main.py", "--experiment", "payload",
+                        "--repetitions", invalid,
+                    ]), patch.object(main, "batch") as mock_batch, \
+                     contextlib.redirect_stderr(io.StringIO()):
+                    with self.assertRaises(SystemExit) as e:
+                        main.main()
+                self.assertEqual(e.exception.code, 2)
+                mock_batch.assert_not_called()
 
 
 if __name__ == "__main__":
