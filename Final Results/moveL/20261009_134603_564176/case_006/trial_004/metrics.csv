@@ -1,0 +1,15 @@
+metric,value
+robot_samples,530
+robot_motion_samples,344
+robot_motion_window_valid,True
+rigol_samples,1200
+motion_duration_s,2.816879500009236
+joint_tracking_rmse,1.8824134497786487
+joint_tracking_rmse_max,2.78553379560328
+tcp_position_tracking_rmse_mm,10.012039025057698
+tcp_position_tracking_rmse_mm_max,11.432482771866553
+joint_velocity_max,87.34178456641506
+tcp_speed_max,367.10462882574177
+mean_power_W,9.65681
+peak_power_W,51.84
+rigol_acquisition_energy_J,57.914460000000226

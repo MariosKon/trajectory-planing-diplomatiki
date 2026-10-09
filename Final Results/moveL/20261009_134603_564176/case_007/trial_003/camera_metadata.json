@@ -1,0 +1,29 @@
+{
+  "path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\movel\\20261009_134603_564176\\case_007\\trial_003\\camera.mkv",
+  "format": "matroska",
+  "codec": "copy",
+  "rtsp_transport": "tcp",
+  "timestamp_mode": "host_wallclock_on_packet_arrival",
+  "startup_confirmed_by": "ffmpeg_frame_progress",
+  "ffmpeg_log": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\movel\\20261009_134603_564176\\case_007\\trial_003\\ffmpeg_camera.log",
+  "ffmpeg_progress": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\movel\\20261009_134603_564176\\case_007\\trial_003\\ffmpeg_camera_progress.txt",
+  "frame_count": 388,
+  "video_validation": {
+    "validation": "ffmpeg_decoded",
+    "decoded_frames": 388,
+    "empty_h264_nals_removed": 14,
+    "original_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\movel\\20261009_134603_564176\\case_007\\trial_003\\camera_original.mkv",
+    "note": "Video timestamps are host/RTSP estimates, not synchronized capture times."
+  },
+  "received_frames": null,
+  "encoded_fps": null,
+  "file_size_bytes": 4065803,
+  "host_start_perf_s": 97386.6338223,
+  "host_end_perf_s": 97402.1735296,
+  "host_start_utc": "2026-10-09T10:58:10.956815+00:00",
+  "host_end_utc": "2026-10-09T10:58:26.496984+00:00",
+  "startup_elapsed_s": 4.296983699998236,
+  "recorded_wall_duration_s": 15.539707299991278,
+  "note": "RTSP/host packet timestamps are not camera exposure times, and are not synchronized to robot or Rigol measurements. Check video_validation for decodability and repair status, and preserve ffmpeg_camera.log for source diagnostics.",
+  "error": null
+}
