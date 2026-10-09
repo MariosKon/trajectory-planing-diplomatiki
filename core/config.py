@@ -16,7 +16,9 @@ class Config:
     )
     servo_time_s: float = 0.03
     aheadtime: float = 20.0
-    gain: float = 500.0
+    gain: float = 500.0  # Legacy/ServoJ fallback
+    servop_aheadtime: float = 20.0
+    servop_gain: float = 300.0
     motion_timeout_s: float = 60.0
     settle_s: float = 3.0
     slow_speed: int = 50
@@ -58,6 +60,10 @@ class Config:
             raise ValueError("Invalid aheadtime")
         if not 200 <= self.gain <= 1000:
             raise ValueError("Invalid gain")
+        if not 20 <= self.servop_aheadtime <= 100:
+            raise ValueError("Invalid ServoP aheadtime")
+        if not 200 <= self.servop_gain <= 1000:
+            raise ValueError("Invalid ServoP gain")
         if self.motion_timeout_s <= 0:
             raise ValueError("Invalid timeout")
         if self.settle_s < 0:

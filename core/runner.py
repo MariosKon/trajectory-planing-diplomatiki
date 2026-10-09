@@ -32,6 +32,21 @@ def configure_motion_speed(robot, case):
     return None
 
 
+def effective_servo_parameters(cfg, case, command_mode):
+    """Resolve SDK tuning; preserve ServoJ defaults and explicit sweep cases."""
+    if command_mode == "ServoP":
+        default_aheadtime, default_gain = cfg.servop_aheadtime, cfg.servop_gain
+    else:
+        default_aheadtime, default_gain = cfg.aheadtime, cfg.gain
+    aheadtime = float(case.get("aheadtime", default_aheadtime))
+    gain = float(case.get("gain", default_gain))
+    if not 20.0 <= aheadtime <= 100.0:
+        raise ValueError("Servo aheadtime must be in [20, 100]")
+    if not 200.0 <= gain <= 1000.0:
+        raise ValueError("Servo gain must be in [200, 1000]")
+    return aheadtime, gain
+
+
 def execute_motion(robot, cfg, case, manager, run_dir):
     from dobot_sdk import CoordinateType
     mode = case["mode"]
@@ -102,19 +117,19 @@ def execute_motion(robot, cfg, case, manager, run_dir):
         raise ValueError(f"Unknown motion mode: {mode}")
 
     if mode == "csv":
-        aheadtime = float(case.get("aheadtime", cfg.aheadtime))
-        gain = float(case.get("gain", cfg.gain))
-        if not 20.0 <= aheadtime <= 100.0:
-            raise ValueError("Servo aheadtime must be in [20, 100]")
-        if not 200.0 <= gain <= 1000.0:
-            raise ValueError("Servo gain must be in [200, 1000]")
+        # Mixed command-mode CSVs need explicit tuning to avoid ambiguous defaults.
+        if len({point.mode for point in points}) > 1 and not (
+            "aheadtime" in case and "gain" in case
+        ):
+            raise ValueError("Mixed ServoP/ServoJ CSV requires explicit aheadtime and gain")
+        aheadtime, gain = effective_servo_parameters(cfg, case, points[0].mode)
         manager.event(
             "MOTION_PARAMETERS",
             f"servo_t_s={period};aheadtime={aheadtime};gain={gain}",
         )
     else:
-        aheadtime = cfg.aheadtime
-        gain = cfg.gain
+        # Online Ruckig streams ServoP commands.
+        aheadtime, gain = effective_servo_parameters(cfg, case, "ServoP")
 
     fields = [
         "sample", "host_time_s", "mode", "servo_t_s", "aheadtime", "gain", "lateness_ms",

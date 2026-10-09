@@ -27,6 +27,8 @@
   "servo_time_s": 0.03,
   "aheadtime": 20,
   "gain": 500,
+  "servop_aheadtime": 20,
+  "servop_gain": 300,
   "motion_timeout_s": 60,
   "settle_s": 3,
   "slow_speed": 50,

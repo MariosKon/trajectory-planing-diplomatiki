@@ -92,6 +92,11 @@ Each batch writes `trial_summary.csv` and `experiment_summary.json`, and include
 
 ## ServoP behavior experiment (cubic Cartesian reference)
 
+The selected default ServoP tuning is **aheadtime=20, gain=300**, documented
+in [the parameter-selection decision](docs/servop-parameter-selection.md).
+This default applies to ServoP trajectories that do not override the tuning.
+ServoJ defaults and explicit historical parameter-sweep cases are unchanged.
+
 Use the separate [ServoP experiment folder](experiments/servop_behavior/README.md). The committed CSV was generated from the same normalized cubic polynomial as the MATLAB script, and the MATLAB script can regenerate it.
 
 ```powershell

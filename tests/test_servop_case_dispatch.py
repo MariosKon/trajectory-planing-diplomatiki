@@ -8,10 +8,19 @@ from pathlib import Path
 from unittest.mock import patch
 
 from core.config import Config
-from core.runner import configure_motion_speed, execute_motion
+from core.runner import configure_motion_speed, effective_servo_parameters, execute_motion
 
 
 class ServoPParameterDispatchTests(unittest.TestCase):
+    def test_selected_defaults_are_servop_only(self):
+        cfg = Config.load(Path(__file__).resolve().parents[1] / "config/common.json")
+        self.assertEqual(effective_servo_parameters(cfg, {}, "ServoP"), (20.0, 300.0))
+        self.assertEqual(effective_servo_parameters(cfg, {}, "ServoJ"), (20.0, 500.0))
+        self.assertEqual(
+            effective_servo_parameters(cfg, {"aheadtime": 50, "gain": 700}, "ServoP"),
+            (50.0, 700.0),
+        )
+
     def test_per_case_gain_and_aheadtime_are_passed_to_sdk(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "minimal.csv"
