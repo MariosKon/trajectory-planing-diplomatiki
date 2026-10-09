@@ -64,17 +64,20 @@ class PayloadCasesTests(unittest.TestCase):
                 original,
                 f"Payload case {idx} changed original motion arguments",
             )
-            for key in before:
-                if key not in ("payload_phase", "physical_payload_mass_kg"):
-                    self.assertEqual(before[key], after[key])
+            for candidate in (full, empty):
+                for key in before:
+                    if key not in ("payload_phase", "physical_payload_mass_kg"):
+                        self.assertEqual(before[key], candidate[key])
+                self.assertNotIn("payload_kg", candidate)
             self.assertEqual(before["payload_phase"], "baseline")
-            self.assertEqual(after["payload_phase"], "changed")
+            self.assertEqual(full["payload_phase"], "full")
+            self.assertEqual(empty["payload_phase"], "empty")
             self.assertEqual(before["matrix_case_index"], idx)
             self.assertEqual(before["matrix_case_count"], 6)
             self.assertEqual(before["physical_payload_mass_kg"], 0.5)
-            self.assertEqual(after["physical_payload_mass_kg"], 0.9)
+            self.assertEqual(full["physical_payload_mass_kg"], 0.9)
+            self.assertEqual(empty["physical_payload_mass_kg"], 0.2)
             self.assertNotIn("payload_kg", before)
-            self.assertNotIn("payload_kg", after)
 
     def test_reject_invalid_phase_and_mass_or_csv(self):
         for phase in ("other", "", None):
