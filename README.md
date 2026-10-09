@@ -35,7 +35,7 @@ python main.py --experiment ruckig --repetitions 1
 python main.py --experiment cubic --csv PATH_TO_POINTS.csv --repetitions 1
 ```
 
-Cubic and Quintic expose three fixed-time reference cases each by default; `--csv PATH` still selects a custom single-case CSV. Trapezoidal and Double-S each use a supplied trajectory CSV per invocation. The dedicated `servop_behavior` experiment has its own MATLAB cubic generator and committed reference CSV in `experiments/servop_behavior/`; it varies servo tracking parameters while keeping the same Cartesian MoveL path. The planned 3×3 offline/Ruckig matrix is **not yet implemented**. MoveJ still requires validated joint-space endpoints; the payload helper currently defines only one load. Camera-video analysis is not yet implemented.
+Cubic and Quintic expose three fixed-time reference cases each by default; `--csv PATH` still selects a custom single-case CSV. **Trapezoidal, Double-S and online Ruckig now also expose three matched-time cases** (3.93, 2.79 and 2.31 seconds) using the same Cartesian reference, selected ServoP tuning and documented velocity / acceleration / jerk constraints. Trapezoidal and Double-S still support `--csv PATH` to run an explicitly supplied single-case CSV. The dedicated `servop_behavior` experiment has its own MATLAB cubic generator and committed reference CSV in `experiments/servop_behavior/`; it varies servo tracking parameters while keeping the same Cartesian MoveL path. MoveJ still requires validated joint-space endpoints; the payload helper currently defines only one load. Camera-video analysis is not yet implemented.
 
 ## Offline polynomial study: fixed-time Cubic and Quintic
 
@@ -104,6 +104,28 @@ The robot's total `MOTION_START` to `MOTION_END` time includes the streamed CSV 
 The additional time seen in the first Cubic tests cannot be identified purely as tracking lag; the new timestamps distinguish command pacing, the fixed final period and the wait until robot-idle confirmation. `partial` means robot motion completed but at least one acquisition component failed, and is **counted separately** from `failed` in `experiment_summary.json`. In particular, a 6-second Rigol display does **not** justify overriding the acquisition-coverage validity test for longer recordings. Existing old results are not retroactively rewritten.
 
 The main branch's selected ServoP defaults, **aheadtime=20 and gain=300**, are retained by this study (unless explicitly overridden per case). ServoJ and historical gain-sweep cases keep their distinct defaults. Verify the effective values in `commands.csv` and `trial_summary.csv` before evaluating smoothness.
+
+## Matched-time piecewise tests (Trapezoidal / Double-S / Ruckig)
+
+See [the experimental protocol](docs/piecewise-test-plan.md) for the exact
+trajectory equations, acceleration and jerk limits, CSV generation, safety
+checks, interpretation of the prior Cubic/Quintic data, and suggested
+physical-test sequence. The three profiles use the same 30 ms command grid
+and 800 mm TCP translation as the polynomial study.
+
+```powershell
+python main.py --experiment trapezoidal --list-cases
+python main.py --experiment double_s --list-cases
+python main.py --experiment ruckig --list-cases
+python main.py --experiment double_s --case 1 --repetitions 1
+```
+
+Real hardware is never commanded without `--execute`. Begin with supervised
+single repetitions before moving to faster settings. For the 3.93-second
+profile, use a separate 1.0 s/div Rigol configuration to avoid the
+already-observed truncated power captures at 0.5 s/div. Do not mix
+6-second and 12-second NORM-display signals in the same unadjusted
+high-frequency smoothness ranking.
 
 ## Current measurement configuration
 
