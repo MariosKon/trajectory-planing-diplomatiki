@@ -11,6 +11,8 @@ class FFmpegCameraTests(unittest.TestCase):
             self.assertEqual(cmd[cmd.index('-c:v') + 1], 'copy')
             self.assertEqual(cmd[cmd.index('-rtsp_transport') + 1], 'tcp')
             self.assertNotIn('-r', cmd)
+            self.assertEqual(cmd[cmd.index('-use_wallclock_as_timestamps') + 1], '1')
+            self.assertEqual(cmd[cmd.index('-fflags') + 1], '+genpts')
             self.assertTrue(cmd[-1].endswith('camera.mkv'))
 
     def test_ffmpeg_is_required(self):
@@ -20,6 +22,16 @@ class FFmpegCameraTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, 'FFmpeg'):
                     r.start()
 
+    def test_header_only_does_not_count_as_frame(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            r = RTSPVideoRecorder('rtsp://example.invalid/live', tmp)
+            r.output_path.write_bytes(b'x' * 4096)
+            self.assertEqual(r._progress_frames(), 0)
+            r.progress_path.write_text('frame=N/A\n', encoding='utf-8')
+            self.assertEqual(r._progress_frames(), 0)
+            r.progress_path.write_text('frame=2\n', encoding='utf-8')
+            self.assertEqual(r._progress_frames(), 2)
+
     def test_start_and_graceful_stop(self):
         with tempfile.TemporaryDirectory() as tmp:
             r = RTSPVideoRecorder('rtsp://example.invalid/live', tmp)
@@ -27,6 +39,7 @@ class FFmpegCameraTests(unittest.TestCase):
             proc.wait.return_value = 0
             def poll():
                 r.output_path.write_bytes(b'x' * 2048)
+                r.progress_path.write_text('frame=1\nprogress=continue\n', encoding='utf-8')
                 return None
             proc.poll.side_effect = poll
             with patch('loggers.camera_logger.shutil.which', return_value='ffmpeg'), patch('loggers.camera_logger.subprocess.Popen', return_value=proc):
