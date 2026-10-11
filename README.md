@@ -35,7 +35,39 @@ python main.py --experiment ruckig --repetitions 1
 python main.py --experiment cubic --csv PATH_TO_POINTS.csv --repetitions 1
 ```
 
-Cubic and Quintic expose three fixed-time reference cases each by default; `--csv PATH` still selects a custom single-case CSV. **Trapezoidal, Double-S and online Ruckig expose nine V/A/J sweep cases by default and retain three matched-time reference cases** (3.93, 2.79 and 2.31 seconds) using the same Cartesian reference, selected ServoP tuning and documented velocity / acceleration / jerk constraints. Trapezoidal and Double-S still support `--csv PATH` to run an explicitly supplied single-case CSV. The dedicated `servop_behavior` experiment has its own MATLAB cubic generator and committed reference CSV in `experiments/servop_behavior/`; it varies servo tracking parameters while keeping the same Cartesian MoveL path. MoveJ still requires validated joint-space endpoints; the payload helper currently defines only one load. Camera-video analysis is not yet implemented.
+Cubic and Quintic expose three fixed-time reference cases each by default; `--csv PATH` still selects a custom single-case CSV. **Trapezoidal, Double-S and online Ruckig expose nine V/A/J sweep cases by default and retain three matched-time reference cases** (3.93, 2.79 and 2.31 seconds) using the same Cartesian reference, selected ServoP tuning and documented velocity / acceleration / jerk constraints. Trapezoidal and Double-S still support `--csv PATH` to run an explicitly supplied single-case CSV. The dedicated `servop_behavior` experiment has its own MATLAB cubic generator and committed reference CSV in `experiments/servop_behavior/`; it varies servo tracking parameters while keeping the same Cartesian MoveL path. MoveJ still requires validated joint-space endpoints. The dedicated payload study now selects the six fastest physically tested trajectory cases and runs them in separate baseline (as-is), full and empty conditions; see [the payload experiment protocol](docs/payload-analysis.md). Camera-video analysis is not yet implemented.
+
+## Three-condition payload analysis
+
+The fastest previously tested MoveL, Cubic, Quintic, Double-S,
+Ruckig and Trapezoidal cases run under **three physical conditions:
+baseline (as-is), full, empty**. By default there is one repetition
+per trajectory (6 runs/condition; 18 total). Pass `--repetitions 5` to
+collect five trials of each trajectory (30 runs/condition; 90 total)
+after a successful supervised single-repetition validation. Each
+invocation runs only one payload condition; the next load never starts
+automatically.
+
+```powershell
+python main.py --experiment payload --list-cases
+python main.py --experiment payload --payload-phase baseline
+# After supervised safety verification: as-is condition
+python main.py --experiment payload --payload-phase baseline --execute
+# STOP; check files and the load. Change/verify to the full condition.
+python main.py --experiment payload --payload-phase full --execute
+# STOP again. Change/verify to the empty condition.
+python main.py --experiment payload --payload-phase empty --execute
+# Once all three payload setups have been safely checked, rerun separately:
+python main.py --experiment payload --payload-phase baseline --repetitions 5 --execute
+python main.py --experiment payload --payload-phase full --repetitions 5 --execute
+python main.py --experiment payload --payload-phase empty --repetitions 5 --execute
+```
+
+To record a measured load without changing the robot's controller payload
+setting, append `--payload-mass-kg N` to each phase's command (kg).
+Review `tool_index` and `payload_kg` separately in the hardware config.
+Results are kept separately under `results/payload/{baseline,full,empty}/`.
+See [the full protocol](docs/payload-analysis.md) for safety and comparisons.
 
 ## Offline polynomial study: fixed-time Cubic and Quintic
 

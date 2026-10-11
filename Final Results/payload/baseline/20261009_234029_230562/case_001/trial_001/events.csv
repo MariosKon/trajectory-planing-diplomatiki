@@ -1,0 +1,11 @@
+host_time_s,host_utc,event,details
+8.018157500016969,2026-10-09T20:40:39.075437+00:00,ROBOT_LOGGER_STARTED,
+8.019300300016766,2026-10-09T20:40:39.076435+00:00,CAMERA_STARTED,Camera started before robot feedback
+8.020355400018161,2026-10-09T20:40:39.077433+00:00,RIGOL_STARTED,Rigol started before robot feedback
+8.522285600018222,2026-10-09T20:40:39.579127+00:00,ROBOT_PREMOTION_READY,lead_s=0.500973
+8.523436999996193,2026-10-09T20:40:39.580087+00:00,RIGOL_PREMOTION_READY,lead_s=1.511826
+8.525026200019056,2026-10-09T20:40:39.582083+00:00,RIGOL_TO_MOTION_LEAD,seconds=1.513522
+8.526043200021377,2026-10-09T20:40:39.583079+00:00,MOTION_START,"{'name': 'movel', 'mode': 'movel', 'start': [-600, -400, 250, -90, 0, 90], 'target': [-600, 400, 250, -90, 0, 90], 'speed': 100, 'acceleration': 100, 'trajectory_profile': 'movel', 'reference_case_name': 'movel', 'source_case_index': 9, 'payload_phase': 'baseline', 'physical_payload_mass_kg': None, 'matrix_case_index': 1, 'matrix_case_count': 6}"
+8.537637000001268,2026-10-09T20:40:39.595087+00:00,MOTION_PARAMETERS,mode=movel; requested_speed=100; v=100; a=100; global_speed=100
+10.818868900008965,2026-10-09T20:40:41.875759+00:00,MOTION_END,
+11.821629900019616,2026-10-09T20:40:42.879075+00:00,ROBOT_LOGGER_STOPPING,

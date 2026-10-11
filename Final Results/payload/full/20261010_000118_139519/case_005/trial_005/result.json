@@ -1,0 +1,129 @@
+{
+  "status": "completed",
+  "case": {
+    "name": "ruckig_sweep_09",
+    "study": "L9",
+    "matlab_matrix_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\piecewise_sweep\\case_matrix.csv",
+    "matlab_matrix_sha256": "6b572f2b5c382277f6af9ec23b690f4193b0942693015b6ea7bd238327ac174c",
+    "velocity_limit_mm_s": 460.0,
+    "acceleration_limit_mm_s2": 1100.0,
+    "global_speed_factor": 100,
+    "exceeds_movel_fast_speed": false,
+    "jerk_limit_mm_s3": 10000.0,
+    "mode": "ruckig",
+    "start": [
+      -600.0,
+      -400.0,
+      250.0,
+      -90.0,
+      0.0,
+      90.0
+    ],
+    "target": [
+      -600.0,
+      400.0,
+      250.0,
+      -90.0,
+      0.0,
+      90.0
+    ],
+    "max_velocity": [
+      460.0,
+      460.0,
+      460.0,
+      460.0,
+      460.0,
+      460.0
+    ],
+    "max_acceleration": [
+      1100.0,
+      1100.0,
+      1100.0,
+      1100.0,
+      1100.0,
+      1100.0
+    ],
+    "max_jerk": [
+      10000.0,
+      10000.0,
+      10000.0,
+      10000.0,
+      10000.0,
+      10000.0
+    ],
+    "minimum_duration_s": null,
+    "trajectory_profile": "ruckig",
+    "reference_case_name": "ruckig_sweep_09",
+    "source_case_index": 9,
+    "payload_phase": "full",
+    "physical_payload_mass_kg": null,
+    "matrix_case_index": 5,
+    "matrix_case_count": 6
+  },
+  "rigol_requested_scale_s_per_div": 0.5,
+  "rigol_effective_scale_s_per_div": 0.5,
+  "motion": {
+    "command_count": 76,
+    "planned_trajectory_duration_s": 2.267312252964427,
+    "ruckig_trajectory_duration_s": 2.267312252964427,
+    "expected_stream_period_s": 2.28,
+    "first_to_last_command_s": 2.2451679999940097,
+    "wait_for_robot_idle_s": 0.721260100021027,
+    "effective_aheadtime": 20.0,
+    "effective_gain": 300.0,
+    "late_commands": 0,
+    "maximum_lateness_ms": 0.0,
+    "mean_command_duration_ms": 7.251371052820775,
+    "elapsed_s": 3.003693900012877
+  },
+  "logging": {
+    "robot": {
+      "received_packets": 553,
+      "invalid_packets": 0,
+      "dropped_rows": 0,
+      "error_samples": 0,
+      "collision_samples": 0
+    },
+    "rigol": {
+      "resource": "USB0::0x1AB1::0x0517::DS1ZE264511439::INSTR",
+      "samples": 1200,
+      "error": null,
+      "warnings": [
+        "Power and energy use NORM display data; not motion-only energy. RAW scaling remains unverified."
+      ],
+      "power_trace_source": "NORM_DISPLAY",
+      "power_calibrated": true,
+      "power_data_valid": true
+    },
+    "camera": {
+      "path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\payload\\full\\20261010_000118_139519\\case_005\\trial_005\\camera.mkv",
+      "format": "matroska",
+      "codec": "copy",
+      "rtsp_transport": "tcp",
+      "timestamp_mode": "host_wallclock_on_packet_arrival",
+      "startup_confirmed_by": "ffmpeg_frame_progress",
+      "ffmpeg_log": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\payload\\full\\20261010_000118_139519\\case_005\\trial_005\\ffmpeg_camera.log",
+      "ffmpeg_progress": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\payload\\full\\20261010_000118_139519\\case_005\\trial_005\\ffmpeg_camera_progress.txt",
+      "frame_count": 387,
+      "video_validation": {
+        "validation": "ffmpeg_decoded",
+        "decoded_frames": 387,
+        "empty_h264_nals_removed": 14,
+        "original_path": "C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\results\\payload\\full\\20261010_000118_139519\\case_005\\trial_005\\camera_original.mkv",
+        "note": "Video timestamps are host/RTSP estimates, not synchronized capture times."
+      },
+      "received_frames": null,
+      "encoded_fps": null,
+      "file_size_bytes": 4063639,
+      "host_start_perf_s": 134117.2779952,
+      "host_end_perf_s": 134131.183002,
+      "host_start_utc": "2026-10-09T21:10:21.799884+00:00",
+      "host_end_utc": "2026-10-09T21:10:35.705655+00:00",
+      "startup_elapsed_s": 2.739424399973359,
+      "recorded_wall_duration_s": 13.905006799992407,
+      "note": "RTSP/host packet timestamps are not camera exposure times, and are not synchronized to robot or Rigol measurements. Check video_validation for decodability and repair status, and preserve ffmpeg_camera.log for source diagnostics.",
+      "error": null
+    }
+  },
+  "error_ids": "0,{[]},GetErrorID();"
+}

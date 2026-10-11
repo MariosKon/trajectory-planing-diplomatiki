@@ -1,0 +1,274 @@
+{
+  "trials": 45,
+  "completed": 40,
+  "partial": 5,
+  "failed": 0,
+  "metrics": {
+    "acceleration_limit_mm_s2": {
+      "mean": 837.5,
+      "std": 237.17082451262846,
+      "min": 500.0,
+      "max": 1100.0,
+      "count": 40
+    },
+    "case": {
+      "mean": 5.5,
+      "std": 2.3204774044612857,
+      "min": 2.0,
+      "max": 9.0,
+      "count": 40
+    },
+    "command_stream_first_to_last_s": {
+      "mean": 2.693105977501182,
+      "std": 0.2783387674744078,
+      "min": 2.23900020000292,
+      "max": 3.116456100004143,
+      "count": 40
+    },
+    "command_stream_period_end_from_first_s": {
+      "mean": 2.71545451250131,
+      "std": 0.2779684659248393,
+      "min": 2.2630340000032447,
+      "max": 3.137293799998588,
+      "count": 40
+    },
+    "effective_aheadtime": {
+      "mean": 20.0,
+      "std": 0.0,
+      "min": 20.0,
+      "max": 20.0,
+      "count": 40
+    },
+    "effective_gain": {
+      "mean": 300.0,
+      "std": 0.0,
+      "min": 300.0,
+      "max": 300.0,
+      "count": 40
+    },
+    "exceeds_movel_fast_speed": {
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "count": 40
+    },
+    "expected_stream_period_s": {
+      "mean": 2.7299999999999995,
+      "std": 0.27804260879888953,
+      "min": 2.28,
+      "max": 3.15,
+      "count": 40
+    },
+    "first_to_last_command_s": {
+      "mean": 2.69263578499922,
+      "std": 0.27846827518548495,
+      "min": 2.2385245000041323,
+      "max": 3.115948999999091,
+      "count": 40
+    },
+    "global_speed_factor": {
+      "mean": 100.0,
+      "std": 0.0,
+      "min": 100.0,
+      "max": 100.0,
+      "count": 40
+    },
+    "global_trial": {
+      "mean": 25.5,
+      "std": 11.690451944500122,
+      "min": 6.0,
+      "max": 45.0,
+      "count": 40
+    },
+    "jerk_limit_mm_s3": {
+      "mean": 11250.0,
+      "std": 4043.0377003132,
+      "min": 6000.0,
+      "max": 16000.0,
+      "count": 40
+    },
+    "joint_tracking_rmse": {
+      "mean": 1.707353512004456,
+      "std": 0.17604500411454932,
+      "min": 1.445637084216692,
+      "max": 2.0389345085078396,
+      "count": 40
+    },
+    "joint_tracking_rmse_max": {
+      "mean": 2.7703568614333394,
+      "std": 0.2845775847488597,
+      "min": 2.3611564961030678,
+      "max": 3.359924265946022,
+      "count": 40
+    },
+    "joint_velocity_max": {
+      "mean": 86.80142919751783,
+      "std": 8.872378587381794,
+      "min": 73.81841417822697,
+      "max": 104.86273341876101,
+      "count": 40
+    },
+    "late_commands": {
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "count": 40
+    },
+    "matrix_case_count": {
+      "mean": 9.0,
+      "std": 0.0,
+      "min": 9.0,
+      "max": 9.0,
+      "count": 40
+    },
+    "maximum_lateness_ms": {
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "count": 40
+    },
+    "mean_power_W": {
+      "mean": 9.989601500000001,
+      "std": 0.43655962498943024,
+      "min": 9.20053,
+      "max": 10.910230000000002,
+      "count": 40
+    },
+    "motion_duration_s": {
+      "mean": 3.465897275000316,
+      "std": 0.29668993529225496,
+      "min": 2.9043133000086527,
+      "max": 3.9794326000119327,
+      "count": 40
+    },
+    "peak_power_W": {
+      "mean": 50.421600000000005,
+      "std": 6.516250852233268,
+      "min": 41.712,
+      "max": 64.46400000000001,
+      "count": 40
+    },
+    "planned_trajectory_duration_s": {
+      "mean": 2.714318051799459,
+      "std": 0.2721594327342289,
+      "min": 2.267312252964427,
+      "max": 3.1216666666666666,
+      "count": 40
+    },
+    "post_stream_idle_wait_s": {
+      "mean": 0.7326387349989091,
+      "std": 0.0800248879716389,
+      "min": 0.6180489999969723,
+      "max": 0.8302009999897564,
+      "count": 40
+    },
+    "rigol_acquisition_energy_J": {
+      "mean": 59.92891724999994,
+      "std": 2.6165756747555586,
+      "min": 55.17948000000012,
+      "max": 65.44961999999954,
+      "count": 40
+    },
+    "rigol_effective_scale_s_per_div": {
+      "mean": 0.5,
+      "std": 0.0,
+      "min": 0.5,
+      "max": 0.5,
+      "count": 40
+    },
+    "rigol_samples": {
+      "mean": 1200.0,
+      "std": 0.0,
+      "min": 1200.0,
+      "max": 1200.0,
+      "count": 40
+    },
+    "robot_motion_samples": {
+      "mean": 422.725,
+      "std": 36.09956850370716,
+      "min": 354.0,
+      "max": 486.0,
+      "count": 40
+    },
+    "robot_motion_window_valid": {
+      "mean": 1.0,
+      "std": 0.0,
+      "min": 1.0,
+      "max": 1.0,
+      "count": 40
+    },
+    "robot_samples": {
+      "mean": 608.725,
+      "std": 35.89442317943855,
+      "min": 541.0,
+      "max": 671.0,
+      "count": 40
+    },
+    "ruckig_trajectory_duration_s": {
+      "mean": 2.714318051799459,
+      "std": 0.2721594327342289,
+      "min": 2.267312252964427,
+      "max": 3.1216666666666666,
+      "count": 40
+    },
+    "selected_case": {
+      "mean": 5.5,
+      "std": 2.3204774044612857,
+      "min": 2.0,
+      "max": 9.0,
+      "count": 40
+    },
+    "tcp_position_tracking_rmse_mm": {
+      "mean": 9.24907768139043,
+      "std": 1.0025092084181693,
+      "min": 7.725533360808033,
+      "max": 11.026367510622524,
+      "count": 40
+    },
+    "tcp_position_tracking_rmse_mm_max": {
+      "mean": 13.46502955915675,
+      "std": 2.004558853109481,
+      "min": 10.389496686686206,
+      "max": 16.19798727580803,
+      "count": 40
+    },
+    "tcp_speed_max": {
+      "mean": 423.18975076067716,
+      "std": 64.38298660869924,
+      "min": 326.32510323510667,
+      "max": 511.28946690342394,
+      "count": 40
+    },
+    "tcp_travel_1pct_99pct_s": {
+      "mean": 2.304659682500642,
+      "std": 0.2821827785915009,
+      "min": 1.8702627000020584,
+      "max": 2.7285330000013346,
+      "count": 40
+    },
+    "trial": {
+      "mean": 3.0,
+      "std": 1.4322297480788657,
+      "min": 1.0,
+      "max": 5.0,
+      "count": 40
+    },
+    "velocity_limit_mm_s": {
+      "mean": 390.0,
+      "std": 63.245553203367585,
+      "min": 300.0,
+      "max": 460.0,
+      "count": 40
+    },
+    "wait_for_robot_idle_s": {
+      "mean": 0.7316072099991289,
+      "std": 0.07997563836175411,
+      "min": 0.6171676999947522,
+      "max": 0.8281752000038978,
+      "count": 40
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "warnings": [
+    "Screen capture failed: VisaIOError('VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.')",
+    "Power and energy use NORM display data; not motion-only energy. RAW scaling remains unverified."
+  ],
+  "channels": {
+    "CHAN1": {
+      "unit": "AMP",
+      "scale": "5.000000e-01",
+      "offset": "-1.000000e+00",
+      "display_preamble": [
+        "0",
+        "0",
+        "1200",
+        "1",
+        "5.000000e-03",
+        "-3.000000e+00",
+        "0",
+        "2.000000e-02",
+        "-50",
+        "127"
+      ]
+    },
+    "CHAN2": {
+      "unit": "VOLT",
+      "scale": "5.000000e+00",
+      "offset": "-4.799990e+01",
+      "display_preamble": [
+        "0",
+        "0",
+        "1200",
+        "1",
+        "5.000000e-03",
+        "-3.000000e+00",
+        "0",
+        "2.000000e-01",
+        "-240",
+        "127"
+      ]
+    }
+  },
+  "host_setup_begin_perf_s": 132707.7916494,
+  "scope_time_reference": "oscilloscope trigger-relative; not aligned with host event timestamps",
+  "requested_horizontal_scale_s_per_div": 0.5,
+  "requested_memory_depth": 60000,
+  "download_raw": false,
+  "expected_waveform_source": "NORM_DISPLAY",
+  "current_A_per_unit": null,
+  "voltage_V_per_unit": 1,
+  "instrument_id": "RIGOL TECHNOLOGIES,DS1202Z-E,DS1ZE264511439,00.06.04",
+  "previous_timebase_mode": "MAIN",
+  "timebase_mode": "MAIN",
+  "horizontal_scale_s_per_div": "5.0000000e-01",
+  "memory_depth": "AUTO",
+  "sample_rate": "1.000000e+06",
+  "host_start_perf_s": 132708.3125087,
+  "additional_capture_wait_s": 0.23395690001780167,
+  "host_stop_perf_s": 132714.3131004,
+  "trigger_state_after_stop": "STOP",
+  "timebase_mode_after_stop": "MAIN",
+  "host_acquisition_duration_s": 6.000591699994402,
+  "sample_rate_after_stop": "1.000000e+06",
+  "raw_download_skipped": true,
+  "raw_display_comparison": {},
+  "power_trace_source": "NORM_DISPLAY",
+  "power_calibrated": true,
+  "movement_only_energy_valid": false,
+  "display_waveform_duration_s": 5.995,
+  "waveform_host_duration_ratio": 0.999068141897672,
+  "acquisition_duration_covered": true,
+  "power_data_valid": true,
+  "preview_points": 1200
+}

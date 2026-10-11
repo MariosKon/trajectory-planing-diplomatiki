@@ -1,0 +1,344 @@
+{
+  "trials": 30,
+  "completed": 30,
+  "partial": 0,
+  "failed": 0,
+  "metrics": {
+    "acceleration_limit_mm_s2": {
+      "mean": 1100.0,
+      "std": 0.0,
+      "min": 1100.0,
+      "max": 1100.0,
+      "count": 15
+    },
+    "acceleration_percent": {
+      "mean": 100.0,
+      "std": 0.0,
+      "min": 100.0,
+      "max": 100.0,
+      "count": 5
+    },
+    "case": {
+      "mean": 3.5,
+      "std": 1.737020834449128,
+      "min": 1.0,
+      "max": 6.0,
+      "count": 30
+    },
+    "command_stream_first_to_last_s": {
+      "mean": 2.2532033759984187,
+      "std": 0.05759049336197844,
+      "min": 2.147020300006261,
+      "max": 2.3080524999822956,
+      "count": 25
+    },
+    "command_stream_period_end_from_first_s": {
+      "mean": 2.27531708399998,
+      "std": 0.05753175090962849,
+      "min": 2.1686733000096865,
+      "max": 2.3263826000038534,
+      "count": 25
+    },
+    "command_v_percent": {
+      "mean": 100.0,
+      "std": 0.0,
+      "min": 100.0,
+      "max": 100.0,
+      "count": 5
+    },
+    "duration_s": {
+      "mean": 2.2649999999999997,
+      "std": 0.06345325672866348,
+      "min": 2.16,
+      "max": 2.31,
+      "count": 20
+    },
+    "effective_aheadtime": {
+      "mean": 20.0,
+      "std": 0.0,
+      "min": 20.0,
+      "max": 20.0,
+      "count": 25
+    },
+    "effective_gain": {
+      "mean": 300.0,
+      "std": 0.0,
+      "min": 300.0,
+      "max": 300.0,
+      "count": 25
+    },
+    "exceeds_movel_fast_speed": {
+      "mean": 0.4,
+      "std": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "count": 25
+    },
+    "expected_peak_acceleration_mm_s2": {
+      "mean": 987.5413592357334,
+      "std": 108.47028494619232,
+      "min": 865.5763860341833,
+      "max": 1097.2641830567334,
+      "count": 20
+    },
+    "expected_peak_jerk_mm_s3": {
+      "mean": 4835.627951785131,
+      "std": 3888.0668146422695,
+      "min": 778.8167680223676,
+      "max": 9833.983247221187,
+      "count": 15
+    },
+    "expected_peak_speed_mm_s": {
+      "mean": 521.4247424115845,
+      "std": 79.97776818882177,
+      "min": 457.4401913875598,
+      "max": 649.3506493506493,
+      "count": 20
+    },
+    "expected_points": {
+      "mean": 76.5,
+      "std": 2.115108557622118,
+      "min": 73.0,
+      "max": 78.0,
+      "count": 20
+    },
+    "expected_stream_period_s": {
+      "mean": 2.292,
+      "std": 0.056789083458002716,
+      "min": 2.19,
+      "max": 2.34,
+      "count": 25
+    },
+    "first_to_last_command_s": {
+      "mean": 2.252520344001241,
+      "std": 0.057686246297703574,
+      "min": 2.146959899982903,
+      "max": 2.3069395999773405,
+      "count": 25
+    },
+    "global_speed_factor": {
+      "mean": 100.0,
+      "std": 0.0,
+      "min": 100.0,
+      "max": 100.0,
+      "count": 30
+    },
+    "global_trial": {
+      "mean": 15.5,
+      "std": 8.803408430829505,
+      "min": 1.0,
+      "max": 30.0,
+      "count": 30
+    },
+    "jerk_limit_mm_s3": {
+      "mean": 10000.0,
+      "std": 0.0,
+      "min": 10000.0,
+      "max": 10000.0,
+      "count": 10
+    },
+    "joint_tracking_rmse": {
+      "mean": 2.06263076197106,
+      "std": 0.15863994461965458,
+      "min": 1.8965587573508538,
+      "max": 2.3956960255070845,
+      "count": 30
+    },
+    "joint_tracking_rmse_max": {
+      "mean": 3.2990310864973953,
+      "std": 0.24015742297334883,
+      "min": 2.7890373360498555,
+      "max": 3.5902234106481727,
+      "count": 30
+    },
+    "joint_velocity_max": {
+      "mean": 103.24485245056742,
+      "std": 7.5218944054143355,
+      "min": 87.52324619565819,
+      "max": 112.91770266722848,
+      "count": 30
+    },
+    "late_commands": {
+      "mean": 0.04,
+      "std": 0.2,
+      "min": 0.0,
+      "max": 1.0,
+      "count": 25
+    },
+    "matrix_case_count": {
+      "mean": 6.0,
+      "std": 0.0,
+      "min": 6.0,
+      "max": 6.0,
+      "count": 30
+    },
+    "maximum_lateness_ms": {
+      "mean": 0.11636000010184944,
+      "std": 0.5818000005092472,
+      "min": 0.0,
+      "max": 2.909000002546236,
+      "count": 25
+    },
+    "mean_power_W": {
+      "mean": 10.664492000000001,
+      "std": 0.5055670358441701,
+      "min": 10.055273333333334,
+      "max": 11.57033,
+      "count": 30
+    },
+    "minimum_theoretical_duration_s": {
+      "mean": 2.2123122529644266,
+      "std": 0.05797509043642022,
+      "min": 2.157312252964427,
+      "max": 2.2673122529644267,
+      "count": 10
+    },
+    "motion_duration_s": {
+      "mean": 2.9257067033303126,
+      "std": 0.3009414315594911,
+      "min": 2.273350200004643,
+      "max": 3.167322099994635,
+      "count": 30
+    },
+    "peak_power_W": {
+      "mean": 64.01720000000002,
+      "std": 8.792767068292063,
+      "min": 49.29600000000001,
+      "max": 84.48,
+      "count": 30
+    },
+    "planned_trajectory_duration_s": {
+      "mean": 2.2654624505928855,
+      "std": 0.05646583998869208,
+      "min": 2.16,
+      "max": 2.31,
+      "count": 25
+    },
+    "post_stream_idle_wait_s": {
+      "mean": 0.7556762040033936,
+      "std": 0.08122472055932768,
+      "min": 0.6186926999944262,
+      "max": 0.8270038000191562,
+      "count": 25
+    },
+    "rigol_acquisition_energy_J": {
+      "mean": 63.97946899999999,
+      "std": 3.0337227083116645,
+      "min": 60.31003999999994,
+      "max": 69.43145999999999,
+      "count": 30
+    },
+    "rigol_effective_scale_s_per_div": {
+      "mean": 0.5,
+      "std": 0.0,
+      "min": 0.5,
+      "max": 0.5,
+      "count": 30
+    },
+    "rigol_samples": {
+      "mean": 1200.0,
+      "std": 0.0,
+      "min": 1200.0,
+      "max": 1200.0,
+      "count": 30
+    },
+    "robot_motion_samples": {
+      "mean": 356.96666666666664,
+      "std": 36.78875702817589,
+      "min": 277.0,
+      "max": 387.0,
+      "count": 30
+    },
+    "robot_motion_window_valid": {
+      "mean": 1.0,
+      "std": 0.0,
+      "min": 1.0,
+      "max": 1.0,
+      "count": 30
+    },
+    "robot_samples": {
+      "mean": 543.3666666666667,
+      "std": 37.25354260713482,
+      "min": 462.0,
+      "max": 577.0,
+      "count": 30
+    },
+    "ruckig_trajectory_duration_s": {
+      "mean": 2.267312252964427,
+      "std": 0.0,
+      "min": 2.267312252964427,
+      "max": 2.267312252964427,
+      "count": 5
+    },
+    "selected_case": {
+      "mean": 3.5,
+      "std": 1.737020834449128,
+      "min": 1.0,
+      "max": 6.0,
+      "count": 30
+    },
+    "source_case_index": {
+      "mean": 7.0,
+      "std": 2.8767798089123047,
+      "min": 3.0,
+      "max": 9.0,
+      "count": 30
+    },
+    "speed_percent": {
+      "mean": 100.0,
+      "std": 0.0,
+      "min": 100.0,
+      "max": 100.0,
+      "count": 5
+    },
+    "tcp_position_tracking_rmse_mm": {
+      "mean": 11.216308211377111,
+      "std": 0.8054349283763171,
+      "min": 10.441259902927499,
+      "max": 12.807487940159941,
+      "count": 30
+    },
+    "tcp_position_tracking_rmse_mm_max": {
+      "mean": 17.04793439423665,
+      "std": 2.208869362168791,
+      "min": 15.246886498967042,
+      "max": 21.950796043925404,
+      "count": 30
+    },
+    "tcp_speed_max": {
+      "mean": 536.666340269107,
+      "std": 68.7949388451412,
+      "min": 481.543497538991,
+      "max": 690.4275785605671,
+      "count": 30
+    },
+    "tcp_travel_1pct_99pct_s": {
+      "mean": 1.8554956266685623,
+      "std": 0.08923344971499347,
+      "min": 1.7182835999992676,
+      "max": 2.007224800006952,
+      "count": 30
+    },
+    "trial": {
+      "mean": 3.0,
+      "std": 1.4383899044561523,
+      "min": 1.0,
+      "max": 5.0,
+      "count": 30
+    },
+    "velocity_limit_mm_s": {
+      "mean": 460.0,
+      "std": 0.0,
+      "min": 460.0,
+      "max": 460.0,
+      "count": 15
+    },
+    "wait_for_robot_idle_s": {
+      "mean": 0.7544364799978212,
+      "std": 0.08123796579952397,
+      "min": 0.6174933000002056,
+      "max": 0.8256353000178933,
+      "count": 25
+    }
+  }
+}

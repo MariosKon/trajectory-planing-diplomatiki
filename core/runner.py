@@ -588,6 +588,15 @@ def batch(cfg, experiment, cases, repetitions, execute=False):
                     "global_trial": global_index,
                     "status": "planned",
                 }
+                # Keep experimental-condition provenance in the aggregate CSV,
+                # not only per-trial case.json, for before/after comparisons.
+                for key in (
+                    "trajectory_profile", "reference_case_name",
+                    "source_case_index", "payload_phase",
+                    "physical_payload_mass_kg",
+                ):
+                    if key in case:
+                        record[key] = case[key]
                 for key in (
                     "aheadtime", "gain", "global_speed_factor",
                     "duration_s", "expected_points",

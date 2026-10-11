@@ -1,0 +1,15 @@
+host_time_s,host_utc,event,details
+6.810575400013477,2026-10-09T21:25:04.321089+00:00,ROBOT_LOGGER_STARTED,
+6.812040599994361,2026-10-09T21:25:04.322083+00:00,CAMERA_STARTED,Camera started before robot feedback
+6.813064400019357,2026-10-09T21:25:04.323084+00:00,RIGOL_STARTED,Rigol started before robot feedback
+7.315695800003596,2026-10-09T21:25:04.826257+00:00,ROBOT_PREMOTION_READY,lead_s=0.501015
+7.317805300001055,2026-10-09T21:25:04.828253+00:00,RIGOL_PREMOTION_READY,lead_s=1.522534
+7.320732399995904,2026-10-09T21:25:04.831242+00:00,RIGOL_TO_MOTION_LEAD,seconds=1.525688
+7.322559799998999,2026-10-09T21:25:04.833236+00:00,MOTION_START,"{'name': 'quintic_T2p31', 'mode': 'csv', 'csv_path': 'C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\quintic\\points_quintic_T2p31.csv', 'csv_sha256': '9f02fd9b3cb373bab971b82f9b96312347f7358d7d474789628b5bd43af88124', 'duration_s': 2.31, 'expected_points': 78, 'expected_peak_speed_mm_s': 649.3506493506493, 'expected_peak_acceleration_mm_s2': 865.5763860341833, 'expected_peak_jerk_mm_s3': 3894.0838401118376, 'exceeds_movel_fast_speed': True, 'global_speed_factor': 100, 'trajectory_profile': 'quintic', 'reference_case_name': 'quintic_T2p31', 'source_case_index': 3, 'payload_phase': 'empty', 'physical_payload_mass_kg': None, 'matrix_case_index': 3, 'matrix_case_count': 6}"
+7.330121600010898,2026-10-09T21:25:04.840219+00:00,MOTION_PARAMETERS,servo_t_s=0.03;aheadtime=20.0;gain=300.0;planned_duration_s=2.31;global_speed=100
+7.343751700012945,2026-10-09T21:25:04.854184+00:00,SERVO_FIRST_COMMAND_SENT,mode=ServoP;period_s=0.030000
+9.643679100001464,2026-10-09T21:25:07.154551+00:00,SERVO_LAST_COMMAND_SENT,count=78;scheduled_duration_s=2.310000
+9.665448000014294,2026-10-09T21:25:07.175492+00:00,SERVO_STREAM_PERIOD_END,count=78
+10.394817899999907,2026-10-09T21:25:07.905604+00:00,SERVO_ROBOT_IDLE,wait_s=0.727992
+10.396498000016436,2026-10-09T21:25:07.906595+00:00,MOTION_END,
+11.400429600005737,2026-10-09T21:25:08.910448+00:00,ROBOT_LOGGER_STOPPING,

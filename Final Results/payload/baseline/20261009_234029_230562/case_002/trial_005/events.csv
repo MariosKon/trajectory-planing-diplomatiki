@@ -1,0 +1,15 @@
+host_time_s,host_utc,event,details
+7.153253299999051,2026-10-09T20:43:57.410234+00:00,ROBOT_LOGGER_STARTED,
+7.154601900023408,2026-10-09T20:43:57.411233+00:00,CAMERA_STARTED,Camera started before robot feedback
+7.155653300025733,2026-10-09T20:43:57.412230+00:00,RIGOL_STARTED,Rigol started before robot feedback
+7.656669800024247,2026-10-09T20:43:57.913058+00:00,ROBOT_PREMOTION_READY,lead_s=0.500148
+7.65768790000584,2026-10-09T20:43:57.914020+00:00,RIGOL_PREMOTION_READY,lead_s=1.523194
+7.658796300005633,2026-10-09T20:43:57.915022+00:00,RIGOL_TO_MOTION_LEAD,seconds=1.524295
+7.659804599999916,2026-10-09T20:43:57.916018+00:00,MOTION_START,"{'name': 'cubic_T2p31', 'mode': 'csv', 'csv_path': 'C:\\Users\\Panos\\Desktop\\diplomatiki\\diplomatiki_clean\\experiments\\cubic\\points_cubic_T2p31.csv', 'csv_sha256': '65b4396e39790376126e509016fcf384f2c9d33ca189b1ea931b631822bac3b2', 'duration_s': 2.31, 'expected_points': 78, 'expected_peak_speed_mm_s': 519.4805194805194, 'expected_peak_acceleration_mm_s2': 899.5333670658346, 'expected_peak_jerk_mm_s3': 778.8167680223676, 'exceeds_movel_fast_speed': True, 'global_speed_factor': 100, 'trajectory_profile': 'cubic', 'reference_case_name': 'cubic_T2p31', 'source_case_index': 3, 'payload_phase': 'baseline', 'physical_payload_mass_kg': None, 'matrix_case_index': 2, 'matrix_case_count': 6}"
+7.662377700005891,2026-10-09T20:43:57.919007+00:00,MOTION_PARAMETERS,servo_t_s=0.03;aheadtime=20.0;gain=300.0;planned_duration_s=2.31;global_speed=100
+7.675396100006765,2026-10-09T20:43:57.931972+00:00,SERVO_FIRST_COMMAND_SENT,mode=ServoP;period_s=0.030000
+9.979899600002682,2026-10-09T20:44:00.236696+00:00,SERVO_LAST_COMMAND_SENT,count=78;scheduled_duration_s=2.310000
+10.00148970002192,2026-10-09T20:44:00.257639+00:00,SERVO_STREAM_PERIOD_END,count=78
+10.620182400016347,2026-10-09T20:44:00.877180+00:00,SERVO_ROBOT_IDLE,wait_s=0.617493
+10.621511800010921,2026-10-09T20:44:00.878177+00:00,MOTION_END,
+11.62390640002559,2026-10-09T20:44:01.880822+00:00,ROBOT_LOGGER_STOPPING,

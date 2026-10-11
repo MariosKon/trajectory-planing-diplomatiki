@@ -1,0 +1,25 @@
+ffmpeg stats and -progress period set to 1.
+[in#0/rtsp @ 00000261621a3cc0] DTS discontinuity in stream 1: packet 35 with DTS 79008674206755, packet 36 with DTS 79008674214599
+Input #0, rtsp, from 'rtsp://192.168.50.146:8554':
+  Metadata:
+    title           : Unnamed
+    comment         : N/A
+  Duration: N/A, start: 1791579913.316281, bitrate: N/A
+  Stream #0:0: Video: h264 (High), yuv420p(tv, bt709, progressive), 960x1280, 29.75 tbr, 90k tbn, start 1791579913.968844
+  Stream #0:1: Audio: aac (LC), 44100 Hz, stereo, fltp, start 1791579913.316281
+Stream mapping:
+  Stream #0:0 -> #0:0 (copy)
+Output #0, matroska, to 'C:\Users\Panos\Desktop\diplomatiki\diplomatiki_clean\results\payload\full\20261010_000118_139519\case_003\trial_001\camera.mkv':
+  Metadata:
+    title           : Unnamed
+    comment         : N/A
+    encoder         : Lavf63.1.102
+  Stream #0:0: Video: h264 (High) (H264 / 0x34363248), yuv420p(tv, bt709, progressive), 960x1280, q=2-31, 29.75 tbr, 1k tbn
+Press [q] to stop, [?] for help
+[matroska @ 00000261621aaf00] Timestamps are unset in a packet for stream 0. This is deprecated and will stop working in the future. Fix your code to set the timestamps properly
+
+
+[q] command received. Exiting.
+
+[out#0/matroska @ 0000026163f00b80] video:3962KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.088029%
+frame=  387 fps= 32 q=-1.0 Lsize=    3965KiB time=00:00:13.54 bitrate=2397.5kbits/s speed=1.11x elapsed=0:00:12.21    
