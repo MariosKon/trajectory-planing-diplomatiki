@@ -1391,6 +1391,194 @@ def compute_angle_fft(d: pd.DataFrame, fps: float, min_hz: float = 0.1,
     return spectrum, metrics
 
 
+def fit_damped_ringdown(d: pd.DataFrame, fps: float,
+                        min_hz: float = 0.5, max_hz: float = 8.0,
+                        min_usable_fraction: float = 0.50):
+    """Fit a decaying sinusoid to the post-stop liquid angle.
+
+    Model:
+        theta(t) = c0 + c1*t + exp(-lambda*t) *
+                   [b*sin(2*pi*f*t) + c*cos(2*pi*f*t)]
+
+    For fixed frequency and decay rate the model is linear, so a coarse-to-fine
+    grid search can estimate f and lambda without SciPy.  Only valid non-BAD
+    surface measurements are fitted; missing frames are not interpolated.
+
+    The reported initial amplitude A0 = sqrt(b^2 + c^2) is the fitted oscillation
+    amplitude extrapolated to the visually detected stop (t = 0).  This is the
+    preferred single-number residual-sloshing metric.
+    """
+    base_metrics = {
+        "ringdown_status": "UNKNOWN",
+        "ringdown_samples": int(len(d)),
+        "ringdown_usable_samples": 0,
+        "ringdown_usable_fraction": 0.0,
+        "ringdown_duration_s": float(len(d) / fps) if fps > 0 else np.nan,
+    }
+    if len(d) < max(18, int(round(0.75 * fps))):
+        return None, {**base_metrics, "ringdown_status": "TOO_SHORT"}
+
+    t_all = d["time_from_visual_stop_s"].to_numpy(float)
+    y_all = d["surface_angle_corrected_deg"].to_numpy(float)
+    usable = (
+        (d["valid"].to_numpy(int) == 1)
+        & (d["quality"].astype(str).to_numpy() != "BAD")
+        & np.isfinite(t_all)
+        & np.isfinite(y_all)
+    )
+    usable_n = int(np.sum(usable))
+    usable_fraction = float(usable_n / len(d)) if len(d) else 0.0
+    base_metrics["ringdown_usable_samples"] = usable_n
+    base_metrics["ringdown_usable_fraction"] = usable_fraction
+
+    if usable_n < max(18, int(round(0.50 * fps))):
+        return None, {**base_metrics, "ringdown_status": "TOO_FEW_USABLE"}
+    if usable_fraction < float(min_usable_fraction):
+        return None, {**base_metrics, "ringdown_status": "TOO_MANY_MISSING"}
+
+    t = t_all[usable]
+    y = y_all[usable]
+    duration = float(np.max(t) - np.min(t)) if len(t) else 0.0
+    if duration < 0.70:
+        return None, {**base_metrics, "ringdown_status": "TOO_SHORT"}
+
+    lo = max(0.05, float(min_hz))
+    hi = min(float(max_hz), 0.95 * fps / 2.0)
+    if not np.isfinite(lo) or not np.isfinite(hi) or hi <= lo:
+        return None, {**base_metrics, "ringdown_status": "EMPTY_FREQUENCY_BAND"}
+
+    def solve_at(freq_hz: float, decay_rate: float):
+        env = np.exp(-decay_rate * t)
+        w = 2.0 * np.pi * freq_hz
+        X = np.column_stack([
+            np.ones_like(t),
+            t,
+            env * np.sin(w * t),
+            env * np.cos(w * t),
+        ])
+        coef, _, _, _ = np.linalg.lstsq(X, y, rcond=None)
+        pred = X @ coef
+        sse = float(np.sum((y - pred) ** 2))
+        return sse, coef
+
+    # Coarse search over a physically broad band, then refine around the best
+    # point.  lambda is constrained >= 0 so the fitted oscillation cannot grow.
+    coarse_freqs = np.linspace(lo, hi, 72)
+    coarse_lambdas = np.linspace(0.0, 4.0, 33)
+    best = None
+    for freq in coarse_freqs:
+        for lam in coarse_lambdas:
+            sse, coef = solve_at(float(freq), float(lam))
+            if best is None or sse < best[0]:
+                best = (sse, float(freq), float(lam), coef)
+
+    _, f0, l0, _ = best
+    df_coarse = float(coarse_freqs[1] - coarse_freqs[0]) if len(coarse_freqs) > 1 else 0.1
+    dl_coarse = float(coarse_lambdas[1] - coarse_lambdas[0]) if len(coarse_lambdas) > 1 else 0.1
+    fine_freqs = np.linspace(max(lo, f0 - df_coarse), min(hi, f0 + df_coarse), 25)
+    fine_lambdas = np.linspace(max(0.0, l0 - dl_coarse), min(4.0, l0 + dl_coarse), 25)
+    for freq in fine_freqs:
+        for lam in fine_lambdas:
+            sse, coef = solve_at(float(freq), float(lam))
+            if sse < best[0]:
+                best = (sse, float(freq), float(lam), coef)
+
+    sse, freq, decay_rate, coef = best
+    offset, trend, sin_coef, cos_coef = map(float, coef)
+    initial_amplitude = float(math.hypot(sin_coef, cos_coef))
+    phase_rad = float(math.atan2(cos_coef, sin_coef))
+    tau = float(1.0 / decay_rate) if decay_rate > 1e-9 else np.inf
+    half_life = float(math.log(2.0) / decay_rate) if decay_rate > 1e-9 else np.inf
+
+    y_mean = float(np.mean(y))
+    sst = float(np.sum((y - y_mean) ** 2))
+    r2 = float(1.0 - sse / sst) if sst > 1e-12 else np.nan
+    rmse = float(math.sqrt(sse / max(1, len(y))))
+
+    # Generate the fitted curve for every frame in the requested ringdown
+    # interval, including frames rejected from the fit, for visual QC.
+    env_all = np.exp(-decay_rate * t_all)
+    pred_all = (
+        offset + trend * t_all
+        + env_all * (
+            sin_coef * np.sin(2.0 * np.pi * freq * t_all)
+            + cos_coef * np.cos(2.0 * np.pi * freq * t_all)
+        )
+    )
+    fit_df = pd.DataFrame({
+        "time_from_visual_stop_s": t_all,
+        "surface_angle_corrected_deg": y_all,
+        "fit_used": usable.astype(int),
+        "quality": d["quality"].astype(str).to_numpy(),
+        "ringdown_fit_angle_deg": pred_all,
+    })
+
+    status = "OK" if np.isfinite(r2) and r2 >= 0.50 and np.isfinite(initial_amplitude) else "LOW_FIT_QUALITY"
+    metrics = {
+        **base_metrics,
+        "ringdown_status": status,
+        "ringdown_usable_samples": usable_n,
+        "ringdown_usable_fraction": usable_fraction,
+        "ringdown_observed_span_s": duration,
+        "ringdown_initial_amplitude_deg": initial_amplitude,
+        "ringdown_initial_peak_to_peak_deg": 2.0 * initial_amplitude,
+        "ringdown_frequency_hz": freq,
+        "ringdown_period_s": float(1.0 / freq) if freq > 0 else np.nan,
+        "ringdown_decay_rate_per_s": decay_rate,
+        "ringdown_decay_time_s": tau,
+        "ringdown_half_life_s": half_life,
+        "ringdown_phase_rad": phase_rad,
+        "ringdown_offset_deg": offset,
+        "ringdown_trend_deg_per_s": trend,
+        "ringdown_rmse_deg": rmse,
+        "ringdown_r2": r2,
+        "ringdown_min_hz": lo,
+        "ringdown_max_hz": hi,
+    }
+    return fit_df, metrics
+
+
+def write_ringdown_plot(fit_df: pd.DataFrame, metrics: dict, out_path: Path, title: str):
+    fig, ax = plt.subplots(figsize=(9, 4.5))
+    used = fit_df["fit_used"].to_numpy(int) == 1
+    if np.any(~used):
+        ax.scatter(
+            fit_df.loc[~used, "time_from_visual_stop_s"],
+            fit_df.loc[~used, "surface_angle_corrected_deg"],
+            s=10, alpha=0.35, label="rejected by QC",
+        )
+    ax.scatter(
+        fit_df.loc[used, "time_from_visual_stop_s"],
+        fit_df.loc[used, "surface_angle_corrected_deg"],
+        s=13, alpha=0.75, label="measured angle",
+    )
+    order = np.argsort(fit_df["time_from_visual_stop_s"].to_numpy(float))
+    ax.plot(
+        fit_df["time_from_visual_stop_s"].to_numpy(float)[order],
+        fit_df["ringdown_fit_angle_deg"].to_numpy(float)[order],
+        linewidth=1.6, label="damped-sinusoid fit",
+    )
+    amp = metrics.get("ringdown_initial_amplitude_deg", np.nan)
+    freq = metrics.get("ringdown_frequency_hz", np.nan)
+    tau = metrics.get("ringdown_decay_time_s", np.nan)
+    r2 = metrics.get("ringdown_r2", np.nan)
+    subtitle = (
+        f"A0={amp:.2f} deg, f={freq:.2f} Hz, tau={tau:.2f} s, R2={r2:.2f}"
+        if all(np.isfinite(v) for v in [amp, freq, tau, r2])
+        else f"A0={amp:.2f} deg, f={freq:.2f} Hz, R2={r2:.2f}"
+    )
+    ax.axvline(0.0, linewidth=1.0, linestyle="--", label="visual stop")
+    ax.axhline(0.0, linewidth=0.8)
+    ax.set_xlabel("Time from visual stop (s)")
+    ax.set_ylabel("Corrected liquid-surface angle (deg)")
+    ax.set_title(title + " — post-stop damped ringdown\n" + subtitle)
+    ax.grid(True, alpha=0.2)
+    ax.legend(loc="best")
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=160)
+    plt.close(fig)
+
+
 def write_fft_plot(spectrum: pd.DataFrame, metrics: dict, out_path: Path, title: str,
                    segment_label: str = "post-motion"):
     fig, ax = plt.subplots(figsize=(9, 4.5))
@@ -1512,7 +1700,9 @@ def process_video(video: Path, root: Path, m: float, b: float, calibration_span_
                   write_video: bool, include_incomplete: bool,
                   plot_smoothing_frames: int = 0, strict_visual_path: bool = False,
                   do_fft: bool = True, fft_min_hz: float = 0.1, fft_max_hz: float = 10.0,
-                  post_fft_duration_s: float = 1.0, boundary_refine_margin_s: float = 1.0) -> dict:
+                  post_fft_duration_s: float = 1.0, boundary_refine_margin_s: float = 1.0,
+                  ringdown_fit_duration_s: float = 2.0,
+                  ringdown_min_hz: float = 0.5, ringdown_max_hz: float = 8.0) -> dict:
     run_dir = video.parent
     out_dir = run_dir / "liquid_analysis"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -1555,10 +1745,18 @@ def process_video(video: Path, root: Path, m: float, b: float, calibration_span_
         )
         ms, me = mot["motion_start_frame"], mot["motion_end_frame"]
         crop_start = max(0, int(math.floor(ms - pre_s * fps)))
-        # Ensure the crop includes the requested post-motion FFT window even if
-        # --post-seconds is set smaller than --post-fft-seconds.
+        # Keep the requested output crop behavior unchanged. The ringdown fit
+        # may inspect additional source frames after crop_end, but those extra
+        # frames are not included in surface_data.csv or the tracking video.
         effective_post_s = max(post_s, post_fft_duration_s)
         crop_end = min(n_frames - 1, int(math.ceil(me + effective_post_s * fps)))
+        ringdown_fit_n_frames = max(1, int(round(max(0.0, ringdown_fit_duration_s) * fps)))
+        ringdown_fit_start_frame = me + 1
+        ringdown_fit_end_frame = min(
+            n_frames - 1,
+            ringdown_fit_start_frame + ringdown_fit_n_frames - 1,
+        )
+        analysis_end = max(crop_end, ringdown_fit_end_frame)
         actual_pre = (ms - crop_start) / fps
         actual_post = (crop_end - me) / fps
         padding_complete = (actual_pre + 1.0 / fps >= pre_s) and (actual_post + 1.0 / fps >= post_s)
@@ -1573,11 +1771,17 @@ def process_video(video: Path, root: Path, m: float, b: float, calibration_span_
                     "path_coverage_ratio": path_coverage_ratio,
                     "visual_path_complete": visual_complete}
 
-        df = analyze_frame_range(analysis_video, crop_start, crop_end, fps)
-        df = apply_reference(df, m, b, ms, fps, plot_smoothing_frames)
+        df_all = analyze_frame_range(analysis_video, crop_start, analysis_end, fps)
+        df_all = apply_reference(df_all, m, b, ms, fps, plot_smoothing_frames)
+        df_all.attrs["plot_smoothing_frames"] = int(max(0, plot_smoothing_frames))
+        df_all["robot_moving"] = ((df_all.original_frame >= ms) & (df_all.original_frame <= me)).astype(int)
+        df_all["time_from_visual_stop_s"] = (df_all.original_frame - me) / fps
+
+        # Preserve the historical output crop (pre + motion + post). The longer
+        # df_all interval exists only so the damped ringdown fit can use more
+        # post-stop cycles when available.
+        df = df_all[df_all.original_frame <= crop_end].copy()
         df.attrs["plot_smoothing_frames"] = int(max(0, plot_smoothing_frames))
-        df["robot_moving"] = ((df.original_frame >= ms) & (df.original_frame <= me)).astype(int)
-        df["time_from_visual_stop_s"] = (df.original_frame - me) / fps
 
         # Post-motion FFT = the first fixed-duration interval immediately AFTER
         # the visually detected final moving frame.  The final moving frame
@@ -1606,6 +1810,22 @@ def process_video(video: Path, root: Path, m: float, b: float, calibration_span_
         motion_df = df[df.robot_moving == 1].copy()
         first1_df = motion_df[(motion_df.motion_time_s >= 0.0) & (motion_df.motion_time_s < 1.0)].copy()
         post_df = df[df.post_motion_fft_window == 1].copy()
+        ringdown_df = df_all[
+            (df_all.original_frame >= ringdown_fit_start_frame)
+            & (df_all.original_frame <= ringdown_fit_end_frame)
+        ].copy()
+
+        ringdown_fit_df, ringdown = fit_damped_ringdown(
+            ringdown_df, fps,
+            min_hz=ringdown_min_hz,
+            max_hz=ringdown_max_hz,
+        )
+        if ringdown_fit_df is not None:
+            ringdown_fit_df.to_csv(out_dir / "ringdown_fit.csv", index=False)
+            write_ringdown_plot(
+                ringdown_fit_df, ringdown,
+                out_dir / "ringdown_fit.png", title,
+            )
 
         first1_fft = {"fft_status": "DISABLED"}
         motion_fft = {"fft_status": "DISABLED"}
@@ -1653,6 +1873,10 @@ def process_video(video: Path, root: Path, m: float, b: float, calibration_span_
             "post_fft_end_s_video": post_fft_end_frame / fps,
             "post_fft_frames": int(len(post_df)),
             "post_fft_actual_duration_s": float(len(post_df) / fps),
+            "ringdown_fit_duration_requested_s": ringdown_fit_duration_s,
+            "ringdown_fit_start_s_video": ringdown_fit_start_frame / fps,
+            "ringdown_fit_end_s_video": ringdown_fit_end_frame / fps,
+            **ringdown,
             "event_vs_visual_motion_duration_s": (
                 float(events["event_motion_duration_s"] - motion_duration)
                 if np.isfinite(events.get("event_motion_duration_s", np.nan)) else np.nan
@@ -1707,6 +1931,11 @@ def process_video(video: Path, root: Path, m: float, b: float, calibration_span_
             first1_fft_status=first1_fft.get("fft_status"),
             whole_motion_fft_status=motion_fft.get("fft_status"),
             post_fft_status=post_fft.get("fft_status"),
+            ringdown_status=ringdown.get("ringdown_status"),
+            ringdown_initial_amplitude_deg=ringdown.get("ringdown_initial_amplitude_deg"),
+            ringdown_frequency_hz=ringdown.get("ringdown_frequency_hz"),
+            ringdown_decay_time_s=ringdown.get("ringdown_decay_time_s"),
+            ringdown_r2=ringdown.get("ringdown_r2"),
             padding_complete=padding_complete,
         )
         return summary
@@ -1861,6 +2090,21 @@ def main():
         "--post-fft-seconds", type=float, default=1.0,
         help="Duration of FFT window immediately after the visually detected robot stop (default: 1.0 s)",
     )
+    ap.add_argument(
+        "--ringdown-fit-seconds", type=float, default=2.0,
+        help=(
+            "Post-stop source duration used only for damped-ringdown fitting "
+            "(default: 2.0 s; does not extend the normal tracking-video crop)"
+        ),
+    )
+    ap.add_argument(
+        "--ringdown-min-hz", type=float, default=0.5,
+        help="Lowest frequency allowed in the damped-ringdown fit (default: 0.5 Hz)",
+    )
+    ap.add_argument(
+        "--ringdown-max-hz", type=float, default=8.0,
+        help="Highest frequency allowed in the damped-ringdown fit (default: 8.0 Hz)",
+    )
     ap.add_argument("--no-video", action="store_true", help="Do not create cropped annotated tracking videos")
     ap.add_argument(
         "--include-incomplete", action="store_true",
@@ -1896,6 +2140,10 @@ def main():
     print(f"Plot smoothing: {args.plot_smoothing_frames} frame(s) (0 = raw per-frame plot)")
     print("Motion timing: VIDEO ONLY (native-frame boundary refinement; logger events are diagnostic)")
     print(f"FFT: {'disabled' if args.no_fft else f'first 1 s + whole motion + first {args.post_fft_seconds:g}s immediately after visual stop, {args.fft_min_hz:g}-{args.fft_max_hz:g} Hz'}")
+    print(
+        f"Ringdown fit: first {args.ringdown_fit_seconds:g}s after visual stop, "
+        f"{args.ringdown_min_hz:g}-{args.ringdown_max_hz:g} Hz"
+    )
     print(f"Strict visual-path rejection: {args.strict_visual_path}")
 
     # Calibration is a perspective correction, not a motion-timing calibration.
@@ -1943,6 +2191,7 @@ def main():
             args.plot_smoothing_frames, args.strict_visual_path,
             not args.no_fft, args.fft_min_hz, args.fft_max_hz,
             args.post_fft_seconds, args.boundary_refine_margin_seconds,
+            args.ringdown_fit_seconds, args.ringdown_min_hz, args.ringdown_max_hz,
         )
         summaries.append(s)
         print(f"    -> {s.get('status')}")
