@@ -47,6 +47,7 @@ import argparse
 import json
 import math
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 from fnmatch import fnmatch
@@ -1809,6 +1810,27 @@ def find_runs(root: Path, video_name: Optional[str] = None,
     return videos, sorted(set(no_video_dirs))
 
 
+def write_csv_with_locked_fallback(df: pd.DataFrame, path: Path, *, index: bool = False) -> Path:
+    """Write a CSV, preserving completed results when Windows has the target open.
+
+    Excel commonly locks an opened CSV on Windows.  If the canonical output
+    cannot be overwritten, save the same data under a timestamped filename
+    instead of failing after all videos have already been processed.
+    """
+    try:
+        df.to_csv(path, index=index)
+        return path
+    except PermissionError:
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        fallback = path.with_name(f"{path.stem}_{stamp}{path.suffix}")
+        df.to_csv(fallback, index=index)
+        print(
+            f"WARNING: Cannot overwrite {path} because it is locked or not writable. "
+            f"Wrote completed results to {fallback} instead."
+        )
+        return fallback
+
+
 def main():
     ap = argparse.ArgumentParser(description="Recursively analyze liquid-surface angle in robot experiment folders")
     ap.add_argument("root", help="Dataset root folder (for example: ...\\Final Results)")
@@ -1907,7 +1929,7 @@ def main():
         cal["calibration_video"] = str(calibration_video.relative_to(root))
     except ValueError:
         cal["calibration_video"] = str(calibration_video)
-    pd.DataFrame([cal]).to_csv(root / "liquid_analysis_calibration.csv", index=False)
+    calibration_path = write_csv_with_locked_fallback(pd.DataFrame([cal]), root / "liquid_analysis_calibration.csv", index=False)
     print(f"Perspective reference: angle = {m:.8f} * x + {b:.6f} deg")
 
     summaries = []
@@ -1944,7 +1966,7 @@ def main():
 
     summary_df = pd.DataFrame(summaries)
     summary_path = root / "liquid_analysis_summary.csv"
-    summary_df.to_csv(summary_path, index=False)
+    summary_path = write_csv_with_locked_fallback(summary_df, summary_path, index=False)
     print("\nStatus counts:")
     print(summary_df["status"].value_counts(dropna=False).to_string())
     print(f"\nMaster summary: {summary_path}")
