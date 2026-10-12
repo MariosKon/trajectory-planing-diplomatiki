@@ -7,3 +7,9 @@ examples/__pycache__/
 logger/__pycache__/
 TCP-IP-Python-V4/dobot_sdk/core/__pycache__/
 *.pyc
+
+# Video post-processing local environment and generated analysis
+video_post_processing/video_env/
+**/liquid_analysis/
+liquid_analysis_summary.csv
+liquid_analysis_calibration.csv
