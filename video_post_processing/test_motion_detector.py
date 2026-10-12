@@ -58,11 +58,39 @@ def test_reverse_direction():
     assert mot["calibrated_target_endpoint_x"] == left
 
 
+
+
+def test_damped_ringdown_fit():
+    fps = 30.0
+    t = np.arange(0.0, 2.0, 1.0 / fps) + 1.0 / fps
+    true_amp = 6.0
+    true_freq = 3.2
+    true_tau = 1.5
+    y = (
+        0.35 + 0.08 * t
+        + true_amp * np.exp(-t / true_tau) * np.sin(2.0 * np.pi * true_freq * t + 0.4)
+    )
+    d = pd.DataFrame({
+        "time_from_visual_stop_s": t,
+        "surface_angle_corrected_deg": y,
+        "valid": np.ones(len(t), dtype=int),
+        "quality": ["GOOD"] * len(t),
+    })
+    fit_df, metrics = mod.fit_damped_ringdown(d, fps, min_hz=0.5, max_hz=8.0)
+    assert fit_df is not None, metrics
+    assert metrics["ringdown_status"] == "OK", metrics
+    assert abs(metrics["ringdown_initial_amplitude_deg"] - true_amp) < 0.35, metrics
+    assert abs(metrics["ringdown_frequency_hz"] - true_freq) < 0.08, metrics
+    assert abs(metrics["ringdown_decay_time_s"] - true_tau) < 0.35, metrics
+    assert metrics["ringdown_r2"] > 0.98, metrics
+
+
 if __name__ == "__main__":
     tests = [
         test_slow_full_traversal,
         test_short_false_jump_not_accepted_as_full_motion,
         test_reverse_direction,
+        test_damped_ringdown_fit,
     ]
     for test_func in tests:
         test_func()
