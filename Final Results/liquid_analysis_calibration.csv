@@ -1,0 +1,2 @@
+left_x,left_angle_deg,right_x,right_angle_deg,reference_slope_deg_per_px,reference_intercept_deg,calibration_path_span_px,calibration_decode_source,calibration_video
+193.0,2.0869718879496286,788.0,2.2171017116431857,0.00021870558603959172,2.0447617098439874,595.0,original,cubic\20261009_161123_377529\case_001\trial_001\camera.mkv
